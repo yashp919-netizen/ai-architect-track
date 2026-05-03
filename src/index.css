@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media print {
+  header, aside, nav, .no-print { display: none !important; }
+  main { margin: 0 !important; padding: 0 !important; }
+  body { font-size: 12pt; color: #000; }
+  a { color: #000; text-decoration: underline; }
+  iframe { display: none !important; }
+}

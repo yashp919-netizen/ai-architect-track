@@ -20,7 +20,7 @@ export default function Layout({ children }) {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen bg-[#080c14]" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       <Header
         streak={currentStreak}
         sidebarOpen={sidebarOpen}
@@ -28,16 +28,16 @@ export default function Layout({ children }) {
       />
       <div className="flex" style={{ minHeight: 'calc(100vh - 56px)' }}>
         {/* Desktop sidebar */}
-        <div className="hidden md:flex md:flex-col md:w-60 md:shrink-0 sticky top-14 self-start h-[calc(100vh-56px)]">
+        <div className="hidden md:flex md:flex-col md:w-60 md:shrink-0 sticky top-14 self-start h-[calc(100vh-56px)] overflow-y-auto">
           <Sidebar progress={progress} currentDay={clampedDay} />
         </div>
 
-        {/* Mobile sidebar overlay */}
+        {/* Mobile overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-20 md:hidden" onClick={() => setSidebarOpen(false)}>
-            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
             <div
-              className="absolute left-0 top-14 bottom-0 w-64 shadow-xl"
+              className="absolute left-0 top-14 bottom-0 w-64 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <Sidebar

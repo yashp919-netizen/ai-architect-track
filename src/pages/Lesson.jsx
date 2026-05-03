@@ -56,21 +56,21 @@ export default function Lesson() {
       {/* Back link */}
       <Link
         to={`/phase/${phase.id}`}
-        className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600 mb-5 transition-colors"
+        className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-blue-400 mb-5 transition-colors"
       >
         <ChevronLeft size={14} /> Back to {phase.title}
       </Link>
 
       <div className="mb-4">
-        <span className="text-xs font-semibold text-blue-500 uppercase tracking-wider">
+        <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
           Lesson {lesson.number}
         </span>
-        <h1 className="text-xl font-bold text-slate-800 mt-1">{lesson.title}</h1>
-        <p className="text-xs text-slate-400 mt-0.5">{lesson.instructor} · {lesson.duration}</p>
+        <h1 className="text-xl font-black text-slate-100 mt-1">{lesson.title}</h1>
+        <p className="text-xs text-slate-600 mt-0.5">{lesson.instructor} · {lesson.duration}</p>
       </div>
 
       {/* YouTube embed */}
-      <div className="relative w-full mb-6 rounded-xl overflow-hidden bg-slate-900" style={{ paddingBottom: '56.25%' }}>
+      <div className="relative w-full mb-6 rounded-xl overflow-hidden bg-slate-900 border border-slate-700/50" style={{ paddingBottom: '56.25%' }}>
         <iframe
           className="absolute inset-0 w-full h-full"
           src={lesson.videoUrl}
@@ -83,7 +83,7 @@ export default function Lesson() {
       {/* Concepts */}
       {lesson.concepts?.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-6">
-          <span className="text-xs text-slate-400 self-center">Concepts:</span>
+          <span className="text-xs text-slate-600 self-center">Concepts:</span>
           {lesson.concepts.map((c) => (
             <ConceptPill key={c}>{c}</ConceptPill>
           ))}
@@ -91,19 +91,19 @@ export default function Lesson() {
       )}
 
       {/* Lesson content */}
-      <div className="prose prose-sm prose-slate max-w-none mb-8">
+      <div className="prose prose-sm prose-invert max-w-none mb-8">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.content}</ReactMarkdown>
       </div>
 
       {/* Inline exercise */}
       {lesson.exerciseCode && (
-        <div className="mb-8 border border-slate-200 rounded-xl overflow-hidden">
-          <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">Try it yourself</h2>
+        <div className="mb-8 border border-slate-700/50 rounded-xl overflow-hidden bg-slate-900">
+          <div className="bg-slate-800/60 border-b border-slate-700/50 px-4 py-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-300">Try it yourself</h2>
             {lesson.exerciseSolution && (
               <button
                 onClick={() => setShowSolution((v) => !v)}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-400 transition-colors"
               >
                 {showSolution ? <EyeOff size={12} /> : <Eye size={12} />}
                 {showSolution ? 'Hide solution' : 'Show solution'}
@@ -113,7 +113,7 @@ export default function Lesson() {
           <div className="p-4 flex flex-col gap-3">
             {showSolution && lesson.exerciseSolution ? (
               <>
-                <p className="text-xs text-slate-400 mb-1">Solution:</p>
+                <p className="text-xs text-slate-600 mb-1">Solution:</p>
                 <CodeEditor
                   initialCode={lesson.exerciseSolution}
                   onChange={() => {}}
@@ -140,10 +140,10 @@ export default function Lesson() {
       <div className="flex items-center justify-between py-4 border-t border-slate-100 mb-6">
         <button
           onClick={toggleComplete}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors border ${
             completed
-              ? 'bg-green-50 text-green-700 hover:bg-green-100'
-              : 'bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-700'
+              ? 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'
+              : 'bg-slate-800 text-slate-300 border-slate-700/50 hover:border-blue-500/30 hover:text-blue-400'
           }`}
         >
           {completed ? <CheckCircle size={15} /> : <Circle size={15} />}
@@ -156,7 +156,7 @@ export default function Lesson() {
         {prevLesson ? (
           <button
             onClick={() => navigate(`/phase/${phase.id}/lesson/${prevLesson.id}`)}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600 transition-colors"
+            className="flex items-center gap-1 text-sm text-slate-600 hover:text-blue-400 transition-colors"
           >
             <ChevronLeft size={14} /> {prevLesson.title}
           </button>
@@ -164,7 +164,7 @@ export default function Lesson() {
         {nextLesson && (
           <button
             onClick={() => navigate(`/phase/${phase.id}/lesson/${nextLesson.id}`)}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-600 transition-colors ml-auto"
+            className="flex items-center gap-1 text-sm text-slate-600 hover:text-blue-400 transition-colors ml-auto"
           >
             {nextLesson.title} <ChevronRight size={14} />
           </button>

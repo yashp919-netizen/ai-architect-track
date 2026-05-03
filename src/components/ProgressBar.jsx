@@ -8,9 +8,9 @@ export default function ProgressBar({ value, max, label, color = 'bg-blue-500' }
           <span>{percent}%</span>
         </div>
       )}
-      <div className="w-full bg-slate-100 rounded-full h-1.5">
+      <div className="w-full bg-slate-800 rounded-full h-1">
         <div
-          className={`${color} h-1.5 rounded-full transition-all duration-300`}
+          className={`${color} h-1 rounded-full transition-all duration-500`}
           style={{ width: `${percent}%` }}
         />
       </div>

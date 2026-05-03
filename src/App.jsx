@@ -5,6 +5,7 @@ import Phase from './pages/Phase';
 import Lesson from './pages/Lesson';
 import Notes from './pages/Notes';
 import Playground from './pages/Playground';
+import Mosaic from './pages/Mosaic';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Route element={<Layout><Home /></Layout>} path="/" />
         <Route element={<Layout><Phase /></Layout>} path="/phase/:id" />
         <Route element={<Layout><Lesson /></Layout>} path="/phase/:phaseId/lesson/:lessonId" />
+        <Route element={<Layout><Mosaic /></Layout>} path="/mosaic" />
         <Route element={<Layout><Notes /></Layout>} path="/notes" />
         <Route element={<Layout><Playground /></Layout>} path="/playground" />
       </Routes>

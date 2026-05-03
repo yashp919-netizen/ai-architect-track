@@ -2,10 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    background-color: #080c14;
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0f172a; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+}
+
 @media print {
   header, aside, nav, .no-print { display: none !important; }
-  main { margin: 0 !important; padding: 0 !important; }
-  body { font-size: 12pt; color: #000; }
+  main { margin: 0 !important; padding: 0 !important; background: white !important; color: black !important; }
+  body { font-size: 12pt; color: #000; background: white !important; }
   a { color: #000; text-decoration: underline; }
   iframe { display: none !important; }
 }

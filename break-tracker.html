@@ -1,0 +1,975 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Break Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* ---------- tokens: light is the base, both dark states re-declare ---------- */
+:root{
+  --ground:#F4F3F7;
+  --surface:#FFFFFF;
+  --sunken:#EDEBF3;
+  --ink:#1B1A24;
+  --ink-2:#413E52;
+  --muted:#6E6A82;
+  --line:#E1DEEA;
+  --line-2:#C8C4D6;
+  --p1:#4C4FBF;
+  --p2:#B8791C;
+  --p1-wash:#EAEAF9;
+  --p2-wash:#F7EEDD;
+  --on1:#FFFFFF;
+  --on2:#171009;
+  --shadow:0 1px 2px rgba(27,26,36,.05), 0 10px 26px -16px rgba(27,26,36,.28);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#131218;
+    --surface:#1C1B24;
+    --sunken:#232130;
+    --ink:#EDEBF3;
+    --ink-2:#C6C2D6;
+    --muted:#928DA6;
+    --line:#2C2A38;
+    --line-2:#403D51;
+    --p1:#7477DC;
+    --p2:#C08528;
+    --p1-wash:#22213A;
+    --p2-wash:#2E2618;
+    --on1:#12121F;
+    --on2:#171009;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#131218;
+  --surface:#1C1B24;
+  --sunken:#232130;
+  --ink:#EDEBF3;
+  --ink-2:#C6C2D6;
+  --muted:#928DA6;
+  --line:#2C2A38;
+  --line-2:#403D51;
+  --p1:#7477DC;
+  --p2:#C08528;
+  --p1-wash:#22213A;
+  --p2-wash:#2E2618;
+  --on1:#12121F;
+  --on2:#171009;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -16px rgba(0,0,0,.8);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:'Schibsted Grotesk','Helvetica Neue',Arial,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+:focus-visible{outline:2px solid var(--p1);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+}
+
+.wrap{max-width:1000px;margin:0 auto;padding:26px 18px 64px}
+.serif{font-family:'Newsreader',Georgia,serif;font-weight:500}
+.mono{font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{
+  font-size:.7rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--muted);margin:0;
+}
+
+/* ---------- masthead ---------- */
+.masthead{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:6px}
+.masthead h1{
+  font-family:'Newsreader',Georgia,serif;font-weight:600;
+  font-size:clamp(1.75rem,4.6vw,2.3rem);line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-.01em;
+}
+.tagline{margin:0;color:var(--muted);font-size:.9rem;max-width:56ch}
+
+/* ---------- names bar ---------- */
+.names{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;
+  margin:18px 0 22px;padding:12px 14px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+}
+.names .eyebrow{margin-right:2px}
+.namefield{display:flex;align-items:center;gap:8px}
+.namefield input{
+  font:inherit;font-weight:600;color:var(--ink);
+  background:transparent;border:0;border-bottom:1px dashed var(--line-2);
+  padding:2px 2px 3px;width:11ch;min-width:0;
+}
+.namefield input:hover{border-bottom-color:var(--ink-2)}
+.namefield input:focus{outline:none;border-bottom:1px solid var(--p1);border-bottom-color:var(--c,var(--p1))}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.p1{--c:var(--p1);--on:var(--on1)}
+.p2{--c:var(--p2);--on:var(--on2)}
+
+/* ---------- generic panel ---------- */
+.panel{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;box-shadow:var(--shadow);
+}
+.section{margin-top:30px}
+.section > .eyebrow{margin-bottom:10px}
+
+/* ---------- period tabs ---------- */
+.tabs{display:flex;gap:2px;background:var(--sunken);padding:3px;border-radius:8px;width:max-content;max-width:100%;overflow-x:auto}
+.tabs button{
+  font:inherit;font-size:.84rem;font-weight:600;color:var(--muted);
+  background:transparent;border:0;padding:7px 13px;border-radius:6px;cursor:pointer;white-space:nowrap;
+}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+
+/* ---------- balance hero ---------- */
+.balance{margin-top:14px;padding:22px}
+.hero{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.hero-name{font-family:'Newsreader',Georgia,serif;font-weight:600;font-size:clamp(1.6rem,4.4vw,2.1rem);line-height:1.15}
+.hero-gap{
+  font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:clamp(1.6rem,4.4vw,2.1rem);font-weight:500;color:var(--c,var(--ink));letter-spacing:-.02em;
+}
+.hero-dot{width:13px;height:13px;border-radius:50%;background:var(--c);align-self:center}
+.chip{
+  display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);
+}
+.chip[data-state="even"]{border-color:var(--line-2);color:var(--ink-2);background:var(--sunken)}
+.chip[data-state="off"]{border-style:dashed}
+.chip[data-state="lopsided"]{border-color:var(--ink-2);color:var(--ink);font-weight:700}
+
+.beam{
+  display:flex;gap:2px;height:22px;margin:20px 0 0;position:relative;
+  background:var(--sunken);border-radius:5px;overflow:hidden;
+}
+.beam-fill{background:var(--c);min-width:0}
+.beam-fill:first-child{border-radius:5px 0 0 5px}
+.beam-fill.p2{border-radius:0 5px 5px 0}
+.beam-mid{
+  position:absolute;left:50%;top:0;bottom:0;width:0;
+  border-left:2px solid var(--surface);opacity:.9;transform:translateX(-1px);
+}
+.beam-empty{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;color:var(--muted);
+}
+.legend{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 18px;margin-top:11px}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:.86rem;color:var(--ink-2)}
+.legend-item b{color:var(--ink);font-weight:600}
+.legend-item .pct{color:var(--muted)}
+.fulcrum-note{margin-top:9px;font-size:.76rem;color:var(--muted)}
+
+/* ---------- timer cards ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:14px}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--c);
+  border-radius:var(--radius);padding:16px 16px 15px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:11px;
+}
+.card[data-running="true"]{background:var(--wash);border-color:var(--c)}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.card-name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.98rem}
+.live-tag{
+  display:flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--c);
+}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--c);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.readout{
+  font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:clamp(1.9rem,6.4vw,2.45rem);font-weight:500;letter-spacing:-.03em;line-height:1;
+}
+.readout small{display:block;font-family:'Schibsted Grotesk',sans-serif;font-size:.7rem;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;letter-spacing:.11em}
+.btn{
+  font:inherit;font-weight:600;font-size:.92rem;cursor:pointer;
+  border-radius:8px;padding:11px 14px;border:1px solid var(--line-2);
+  background:var(--surface);color:var(--ink);transition:background .12s,border-color .12s;
+}
+.btn:hover{border-color:var(--ink-2)}
+.btn-go{background:var(--c);border-color:var(--c);color:var(--on);width:100%}
+.btn-go:hover{filter:brightness(1.08);border-color:var(--c)}
+.btn-stop{background:var(--surface);border:1px solid var(--c);color:var(--c);width:100%}
+.btn-sm{padding:6px 10px;font-size:.8rem;border-radius:6px}
+.btn-quiet{background:transparent;border-color:transparent;color:var(--muted)}
+.btn-quiet:hover{color:var(--ink);border-color:var(--line-2)}
+.card-foot{display:flex;gap:14px;font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.card-foot b{color:var(--ink-2);font-weight:600;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+
+/* ---------- diverging day chart ---------- */
+.chart{margin-top:14px;padding:18px 16px 14px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.chart-head .legend-item{font-size:.82rem;font-weight:600;color:var(--ink-2)}
+.rows{display:grid;grid-template-columns:1fr 62px 1fr;gap:4px 6px;align-items:center}
+.track{display:flex;height:15px;align-items:stretch}
+.track.left{justify-content:flex-end}
+.bar{
+  background:var(--c);border-radius:4px;min-width:0;position:relative;
+  border:0;padding:0;cursor:pointer;display:block;
+}
+.track.left .bar{border-radius:4px 1px 1px 4px;margin-right:2px}
+.track.right .bar{border-radius:1px 4px 4px 1px;margin-left:2px}
+.bar:hover,.bar:focus-visible{filter:brightness(1.12)}
+.daylab{
+  text-align:center;font-size:.7rem;color:var(--muted);white-space:nowrap;
+  border-left:1px solid var(--line-2);border-right:1px solid var(--line-2);
+}
+.daylab.today{color:var(--ink);font-weight:700}
+.chart-foot{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted)}
+#tip{
+  position:fixed;z-index:40;pointer-events:none;opacity:0;transform:translate(-50%,-118%);
+  background:var(--ink);color:var(--ground);font-size:.76rem;font-weight:500;
+  padding:6px 9px;border-radius:6px;white-space:nowrap;box-shadow:0 6px 18px -8px rgba(0,0,0,.6);
+  transition:opacity .1s;
+}
+#tip[data-show="true"]{opacity:1}
+
+/* ---------- forms ---------- */
+.form{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.7rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{
+  font:inherit;font-size:.9rem;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line-2);border-radius:7px;padding:8px 10px;min-width:0;
+}
+.field input[type="number"]{width:8ch}
+.field.grow{flex:1 1 180px}
+.field.grow input{width:100%}
+.who{display:flex;gap:4px;background:var(--sunken);padding:3px;border-radius:8px}
+.who button{
+  font:inherit;font-size:.85rem;font-weight:600;color:var(--muted);background:transparent;
+  border:0;padding:7px 12px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:7px;
+}
+.who button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+
+/* ---------- log ---------- */
+.daygroup{margin-top:18px}
+.daygroup:first-child{margin-top:0}
+.dayhead{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding-bottom:7px;border-bottom:1px solid var(--line);margin-bottom:2px;
+}
+.dayhead .d{font-weight:600;font-size:.88rem}
+.dayhead .t{font-size:.78rem;color:var(--muted);display:flex;gap:12px}
+.dayhead .t span{display:flex;align-items:center;gap:6px}
+.entry{
+  display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);
+}
+.entry:last-child{border-bottom:0}
+.entry .when{font-size:.78rem;color:var(--muted);width:17ch;flex:none;font-family:'IBM Plex Mono',monospace}
+.entry .who-tag{display:flex;align-items:center;gap:7px;font-size:.87rem;font-weight:500;flex:1 1 100px;min-width:0}
+.entry .who-tag span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry .dur{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:.9rem;flex:none}
+.entry .note{font-size:.83rem;color:var(--muted);flex:2 1 120px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry .acts{display:flex;gap:2px;flex:none}
+.tag-demo{
+  font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--line-2);border-radius:4px;padding:1px 5px;flex:none;
+}
+.editrow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:12px 4px;background:var(--sunken);border-radius:8px;margin:6px 0}
+.empty{color:var(--muted);font-size:.9rem;padding:14px 2px}
+
+/* ---------- notices, backup ---------- */
+.notice{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+  border:1px dashed var(--line-2);border-radius:var(--radius);padding:11px 14px;margin-top:18px;
+  font-size:.86rem;color:var(--ink-2);background:var(--surface);
+}
+.notice p{margin:0;flex:1 1 260px}
+details.backup{margin-top:30px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 16px}
+details.backup > summary{
+  cursor:pointer;padding:13px 0;font-size:.7rem;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--muted);list-style:none;
+}
+details.backup > summary::-webkit-details-marker{display:none}
+details.backup > summary::before{content:"+ ";font-family:'IBM Plex Mono',monospace}
+details.backup[open] > summary::before{content:"– "}
+.backup-body{padding-bottom:16px;display:flex;flex-direction:column;gap:10px}
+.backup-body p{margin:0;font-size:.85rem;color:var(--muted);max-width:62ch}
+textarea#blob{
+  font-family:'IBM Plex Mono',monospace;font-size:.74rem;line-height:1.5;
+  width:100%;height:130px;resize:vertical;color:var(--ink-2);background:var(--sunken);
+  border:1px solid var(--line);border-radius:8px;padding:10px;
+}
+.rowbtns{display:flex;flex-wrap:wrap;gap:8px}
+.say{font-size:.82rem;color:var(--muted);min-height:1.2em}
+footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;border-top:1px solid var(--line);padding-top:14px}
+
+@media (max-width:560px){
+  .entry{flex-wrap:wrap;gap:6px 10px}
+  .entry .note{flex-basis:100%;order:5}
+  .entry .when{width:auto}
+  .rows{grid-template-columns:1fr 54px 1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <h1 class="serif">Break Ledger</h1>
+  </header>
+  <p class="tagline">Two people, one running tally. Start a timer when you step away, and see at a glance whose break time is running ahead.</p>
+
+  <div class="names" id="names">
+    <p class="eyebrow">Who&rsquo;s tracking</p>
+    <div class="namefield p1">
+      <span class="dot"></span>
+      <input id="n1" data-name="a" maxlength="18" spellcheck="false" autocomplete="off" aria-label="First person&rsquo;s name">
+    </div>
+    <div class="namefield p2">
+      <span class="dot"></span>
+      <input id="n2" data-name="b" maxlength="18" spellcheck="false" autocomplete="off" aria-label="Second person&rsquo;s name">
+    </div>
+  </div>
+
+  <div id="demoNotice"></div>
+
+  <section class="section">
+    <p class="eyebrow">The balance</p>
+    <div class="tabs" id="tabs" role="group" aria-label="Time period">
+      <button data-period="today" type="button">Today</button>
+      <button data-period="week" type="button">This week</button>
+      <button data-period="month" type="button">This month</button>
+      <button data-period="all" type="button">All time</button>
+    </div>
+    <div class="panel balance" id="balance"></div>
+  </section>
+
+  <section class="section">
+    <p class="eyebrow">Timers</p>
+    <div class="cards" id="timers"></div>
+  </section>
+
+  <section class="section">
+    <p class="eyebrow">Day by day</p>
+    <div class="panel chart" id="chart"></div>
+  </section>
+
+  <section class="section">
+    <p class="eyebrow">Log a break you forgot to time</p>
+    <div class="panel">
+      <form class="form" id="addForm">
+        <div class="field">
+          <label>Who</label>
+          <div class="who" id="addWho" role="group" aria-label="Who took the break">
+            <button type="button" data-who="a"><span class="dot p1"></span><span data-nm="a"></span></button>
+            <button type="button" data-who="b"><span class="dot p2"></span><span data-nm="b"></span></button>
+          </div>
+        </div>
+        <div class="field"><label for="aDate">Date</label><input id="aDate" type="date" required></div>
+        <div class="field"><label for="aTime">Started</label><input id="aTime" type="time" required></div>
+        <div class="field"><label for="aMins">Minutes</label><input id="aMins" type="number" min="1" max="1440" step="1" value="30" required></div>
+        <div class="field grow"><label for="aNote">Note (optional)</label><input id="aNote" maxlength="60" placeholder="walk, gym, nap&hellip;" autocomplete="off"></div>
+        <button class="btn" type="submit">Add break</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section">
+    <p class="eyebrow">Log</p>
+    <div class="panel" id="log"></div>
+  </section>
+
+  <details class="backup">
+    <summary>Backup &amp; restore</summary>
+    <div class="backup-body">
+      <p>Everything lives in this browser only &mdash; nothing is sent anywhere. Copy the text below somewhere safe to keep a backup, or paste an old backup in and restore it.</p>
+      <textarea id="blob" spellcheck="false" aria-label="Backup data"></textarea>
+      <div class="rowbtns">
+        <button class="btn btn-sm" id="bCopy" type="button">Copy backup</button>
+        <button class="btn btn-sm" id="bRestore" type="button">Restore from pasted text</button>
+        <button class="btn btn-sm btn-quiet" id="bReset" type="button">Erase everything</button>
+      </div>
+      <p class="say" id="bSay"></p>
+    </div>
+  </details>
+
+  <footer class="foot">
+    Breaks are stored in this browser&rsquo;s local storage, so use the same device and browser to keep one shared ledger.
+    Weeks start on Monday. Running timers survive a refresh &mdash; they keep counting from the moment you pressed start.
+  </footer>
+</div>
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ============================ storage ============================ */
+  var KEY = "breakLedger.v1";
+  var state = load();
+
+  function blank() {
+    return { names: { a: "You", b: "Your wife" }, entries: [], running: { a: null, b: null }, seeded: false };
+  }
+  function load() {
+    var s = blank();
+    try {
+      var raw = window.localStorage.getItem(KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p && typeof p === "object") {
+          if (p.names && p.names.a && p.names.b) s.names = { a: String(p.names.a), b: String(p.names.b) };
+          if (Array.isArray(p.entries)) s.entries = p.entries.filter(valid);
+          if (p.running && typeof p.running === "object") {
+            s.running = { a: num(p.running.a), b: num(p.running.b) };
+          }
+          s.seeded = !!p.seeded;
+        }
+      }
+    } catch (e) { /* private mode, blocked storage — carry on in memory */ }
+    return s;
+  }
+  function num(v) { return typeof v === "number" && isFinite(v) && v > 0 ? v : null; }
+  function valid(e) {
+    return e && (e.p === "a" || e.p === "b") && typeof e.start === "number" &&
+           isFinite(e.start) && typeof e.secs === "number" && e.secs > 0;
+  }
+  function save() {
+    try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+
+  /* ============================ time helpers ============================ */
+  var DAY = 86400000;
+  function startOfDay(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  function startOfWeek(t) { var d = new Date(startOfDay(t)); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
+  function startOfMonth(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(1); return d.getTime(); }
+  function dayKey(t) {
+    var d = new Date(t);
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+  /* "1h 25m" — the ledger's unit is the minute; seconds only show on a live timer */
+  function dur(secs) {
+    var m = Math.round(secs / 60);
+    if (secs > 0 && m === 0) return "<1m";
+    var h = Math.floor(m / 60);
+    m = m - h * 60;
+    if (!h) return m + "m";
+    return m ? h + "h " + m + "m" : h + "h";
+  }
+  function clock(secs) {
+    var s = Math.max(0, Math.floor(secs));
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return (h ? h + ":" + pad(m) : m) + ":" + pad(ss);
+  }
+  function timeOfDay(t) {
+    return new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  function dayLabel(t) {
+    var today = startOfDay(Date.now()), d = startOfDay(t);
+    if (d === today) return "Today";
+    if (d === today - DAY) return "Yesterday";
+    return new Date(t).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+  }
+
+  /* ============================ demo data ============================ */
+  /* Seeded so the first look is stable, and every row is flagged demo:true. */
+  function seed() {
+    var s = 20260906, rnd = function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    var out = [], today = startOfDay(Date.now());
+    var plan = {
+      a: { count: [1, 2], mins: [15, 45], notes: ["walk", "coffee", "reading", "gym", "call with mum"] },
+      b: { count: [1, 2], mins: [20, 55], notes: ["yoga", "podcast", "garden", "nap", "chai + book"] }
+    };
+    ["a", "b"].forEach(function (p) {
+      var cfg = plan[p];
+      for (var back = 13; back >= 0; back--) {
+        if (rnd() < 0.16) continue;                       // some days nobody gets a break
+        var n = cfg.count[0] + (rnd() < 0.45 ? 1 : 0);
+        for (var i = 0; i < n; i++) {
+          var hour = 8 + Math.floor(rnd() * 12);
+          var mins = cfg.mins[0] + Math.floor(rnd() * (cfg.mins[1] - cfg.mins[0]));
+          var start = today - back * DAY + hour * 3600000 + Math.floor(rnd() * 50) * 60000;
+          if (start > Date.now()) continue;
+          out.push({
+            id: "demo-" + p + "-" + back + "-" + i,
+            p: p, start: start, secs: mins * 60,
+            note: cfg.notes[Math.floor(rnd() * cfg.notes.length)],
+            demo: true
+          });
+        }
+      }
+    });
+    return out;
+  }
+  if (!state.seeded && state.entries.length === 0) {
+    state.entries = seed();
+    state.seeded = true;
+    save();
+  }
+  function hasDemo() { return state.entries.some(function (e) { return e.demo; }); }
+
+  /* ============================ queries ============================ */
+  var period = "week";
+  var PERIOD_LABEL = { today: "today", week: "this week", month: "this month", all: "all time" };
+
+  function periodStart() {
+    var now = Date.now();
+    if (period === "today") return startOfDay(now);
+    if (period === "week") return startOfWeek(now);
+    if (period === "month") return startOfMonth(now);
+    return 0;
+  }
+  /* Live seconds from a timer that is still running, counted into the window it started in. */
+  function liveSecs(p, from) {
+    var r = state.running[p];
+    if (!r) return 0;
+    if (from && r < from) return 0;
+    return Math.max(0, (Date.now() - r) / 1000);
+  }
+  function totalFor(p, from, to) {
+    var t = 0;
+    for (var i = 0; i < state.entries.length; i++) {
+      var e = state.entries[i];
+      if (e.p !== p) continue;
+      if (from && e.start < from) continue;
+      if (to && e.start >= to) continue;
+      t += e.secs;
+    }
+    return t;
+  }
+  function totalWithLive(p, from, to) { return totalFor(p, from, to) + (to ? 0 : liveSecs(p, from)); }
+  function nameOf(p) { return state.names[p] || (p === "a" ? "You" : "Your wife"); }
+  function esc(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* ============================ render: balance ============================ */
+  function renderBalance() {
+    var from = periodStart();
+    var a = totalWithLive("a", from), b = totalWithLive("b", from);
+    var total = a + b, diff = Math.abs(a - b);
+    var lead = a === b ? null : (a > b ? "a" : "b");
+    var label = PERIOD_LABEL[period];
+    var html = "";
+
+    if (total === 0) {
+      html += '<p class="eyebrow">Ahead ' + label + '</p>';
+      html += '<div class="hero"><span class="hero-name">Nothing logged yet</span></div>';
+      html += '<p class="fulcrum-note">Press a timer below when either of you steps away, or add a break by hand.</p>';
+      html += '<div class="beam"><div class="beam-empty">no break time ' + esc(label) + '</div></div>';
+      document.getElementById("balance").innerHTML = html;
+      return;
+    }
+
+    /* State chip: "even" is generous on purpose — this is a marriage, not an audit. */
+    var share = total ? diff / total : 0;
+    var st = (diff <= 600 || share <= 0.12) ? "even" : (share <= 0.3 ? "off" : "lopsided");
+    var stText = st === "even" ? "Pretty even" : st === "off" ? "A little uneven" : "Lopsided";
+
+    html += '<p class="eyebrow">Ahead ' + esc(label) + '</p>';
+    html += '<div class="hero">';
+    if (!lead) {
+      html += '<span class="hero-name">Dead even</span>';
+    } else {
+      html += '<span class="hero-dot ' + lead + '" style="--c:var(--p' + (lead === "a" ? "1" : "2") + ')"></span>';
+      html += '<span class="hero-name">' + esc(nameOf(lead)) + '</span>';
+      html += '<span class="hero-gap" style="--c:var(--p' + (lead === "a" ? "1" : "2") + ')">+' + dur(diff) + '</span>';
+    }
+    html += '<span class="chip" data-state="' + st + '">' + stText + '</span>';
+    html += '</div>';
+
+    var pa = (a / total) * 100, pb = 100 - pa;
+    html += '<div class="beam" role="img" aria-label="' +
+      esc(nameOf("a")) + " " + dur(a) + ", " + esc(nameOf("b")) + " " + dur(b) + ' ' + esc(label) + '">' +
+      '<div class="beam-fill p1" style="width:' + pa.toFixed(2) + '%"></div>' +
+      '<div class="beam-fill p2" style="width:' + pb.toFixed(2) + '%"></div>' +
+      '<div class="beam-mid"></div></div>';
+
+    html += '<div class="legend">' +
+      '<span class="legend-item"><span class="dot p1"></span>' + esc(nameOf("a")) +
+        ' <b class="mono">' + dur(a) + '</b> <span class="pct">' + Math.round(pa) + '%</span></span>' +
+      '<span class="legend-item"><span class="pct">' + Math.round(pb) + '%</span> <b class="mono">' + dur(b) +
+        '</b> ' + esc(nameOf("b")) + '<span class="dot p2"></span></span>' +
+      '</div>';
+    html += '<p class="fulcrum-note">The dotted line is an even split &mdash; ' + dur(total / 2) + ' each of ' + dur(total) + ' total.</p>';
+
+    document.getElementById("balance").innerHTML = html;
+  }
+
+  /* ============================ render: timer cards ============================ */
+  function renderTimers() {
+    var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
+    var html = ["a", "b"].map(function (p) {
+      var running = !!state.running[p];
+      var cls = p === "a" ? "p1" : "p2";
+      var wash = p === "a" ? "var(--p1-wash)" : "var(--p2-wash)";
+      var today = totalWithLive(p, todayStart), week = totalWithLive(p, weekStart);
+      var s = '<div class="card ' + cls + '" data-running="' + running + '" style="--wash:' + wash + '">';
+      s += '<div class="card-top"><span class="card-name"><span class="dot"></span>' + esc(nameOf(p)) + '</span>';
+      s += running ? '<span class="live-tag"><span class="pulse"></span>on a break</span>' : "";
+      s += '</div>';
+      s += '<div class="readout"><small>' + (running ? "This break" : "Today so far") + '</small>' +
+           '<span data-live="' + p + '">' + (running ? clock(liveSecs(p)) : dur(today)) + '</span></div>';
+      s += running
+        ? '<button class="btn btn-stop" type="button" data-stop="' + p + '">Stop &amp; log it</button>'
+        : '<button class="btn btn-go" type="button" data-start="' + p + '">Start a break</button>';
+      s += '<div class="card-foot"><span>Today <b data-today="' + p + '">' + dur(today) + '</b></span>' +
+           '<span>This week <b data-week="' + p + '">' + dur(week) + '</b></span></div>';
+      return s + "</div>";
+    }).join("");
+    document.getElementById("timers").innerHTML = html;
+  }
+
+  /* Only the live numbers tick — a full re-render every second would fight the forms. */
+  function tick() {
+    if (!state.running.a && !state.running.b) return;
+    var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
+    ["a", "b"].forEach(function (p) {
+      var live = document.querySelector('[data-live="' + p + '"]');
+      if (live && state.running[p]) live.textContent = clock(liveSecs(p));
+      var t = document.querySelector('[data-today="' + p + '"]');
+      if (t) t.textContent = dur(totalWithLive(p, todayStart));
+      var w = document.querySelector('[data-week="' + p + '"]');
+      if (w) w.textContent = dur(totalWithLive(p, weekStart));
+    });
+    renderBalance();
+  }
+
+  /* ============================ render: diverging day chart ============================ */
+  var DAYS = 14;
+  function renderChart() {
+    var today = startOfDay(Date.now());
+    var rows = [], max = 0;
+    for (var i = DAYS - 1; i >= 0; i--) {
+      var from = today - i * DAY, to = from + DAY;
+      var a = totalFor("a", from, to) + (i === 0 ? liveSecs("a") : 0);
+      var b = totalFor("b", from, to) + (i === 0 ? liveSecs("b") : 0);
+      max = Math.max(max, a, b);
+      rows.push({ from: from, a: a, b: b, isToday: i === 0 });
+    }
+    var el = document.getElementById("chart");
+    if (max === 0) {
+      el.innerHTML = '<p class="empty">No breaks in the last ' + DAYS + ' days yet. Once you log a few, this chart puts ' +
+        esc(nameOf("a")) + ' on the left of the centre line and ' + esc(nameOf("b")) + ' on the right, one row per day.</p>';
+      return;
+    }
+
+    var html = '<div class="chart-head">' +
+      '<span class="legend-item"><span class="dot p1"></span>' + esc(nameOf("a")) + '</span>' +
+      '<span class="legend-item">' + esc(nameOf("b")) + '<span class="dot p2"></span></span>' +
+      '</div><div class="rows">';
+
+    rows.forEach(function (r) {
+      var d = new Date(r.from);
+      var lab = r.isToday ? "today" : d.toLocaleDateString([], { weekday: "short" }).toLowerCase() + " " + d.getDate();
+      html += '<div class="track left">' + bar(r, "a", max) + "</div>";
+      html += '<div class="daylab' + (r.isToday ? " today" : "") + '">' + esc(lab) + "</div>";
+      html += '<div class="track right">' + bar(r, "b", max) + "</div>";
+    });
+    html += "</div>";
+
+    var pk = new Date(rows.reduce(function (best, r) {
+      return Math.max(r.a, r.b) > Math.max(best.a, best.b) ? r : best;
+    }, rows[0]).from);
+    html += '<p class="chart-foot">Each row is one day, ' + esc(nameOf("a")) + ' left of the centre and ' +
+      esc(nameOf("b")) + ' right. Full width either side = ' + dur(max) + ', the busiest single day (' +
+      esc(pk.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })) + ').</p>';
+    el.innerHTML = html;
+  }
+
+  function bar(r, p, max) {
+    var v = r[p];
+    if (v <= 0) return "";
+    var w = Math.max(2.5, (v / max) * 100);
+    var cls = p === "a" ? "p1" : "p2";
+    var d = new Date(r.from).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    return '<button class="bar ' + cls + '" type="button" style="width:' + w.toFixed(2) + '%"' +
+      ' data-tip="' + esc(nameOf(p) + " \u00b7 " + dur(v) + " \u00b7 " + d) + '"' +
+      ' aria-label="' + esc(nameOf(p) + ", " + dur(v) + " on " + d) + '"></button>';
+  }
+
+  /* ============================ render: log ============================ */
+  var editing = null;
+  function renderLog() {
+    var el = document.getElementById("log");
+    var list = state.entries.slice().sort(function (x, y) { return y.start - x.start; });
+    if (!list.length) {
+      el.innerHTML = '<p class="empty">No breaks logged yet.</p>';
+      return;
+    }
+    var groups = [], byDay = {};
+    list.forEach(function (e) {
+      var k = dayKey(e.start);
+      if (!byDay[k]) { byDay[k] = { key: k, at: e.start, items: [] }; groups.push(byDay[k]); }
+      byDay[k].items.push(e);
+    });
+
+    var html = groups.slice(0, 40).map(function (g) {
+      var ta = 0, tb = 0;
+      g.items.forEach(function (e) { if (e.p === "a") ta += e.secs; else tb += e.secs; });
+      var s = '<div class="daygroup"><div class="dayhead"><span class="d">' + esc(dayLabel(g.at)) + '</span>' +
+        '<span class="t"><span><span class="dot p1"></span>' + dur(ta) + '</span>' +
+        '<span><span class="dot p2"></span>' + dur(tb) + '</span></span></div>';
+      s += g.items.map(function (e) { return editing === e.id ? editRow(e) : entryRow(e); }).join("");
+      return s + "</div>";
+    }).join("");
+    if (groups.length > 40) html += '<p class="empty">Showing the most recent 40 days.</p>';
+    el.innerHTML = html;
+  }
+
+  function entryRow(e) {
+    var cls = e.p === "a" ? "p1" : "p2";
+    var end = e.start + e.secs * 1000;
+    return '<div class="entry">' +
+      '<span class="when">' + esc(timeOfDay(e.start)) + "&ndash;" + esc(timeOfDay(end)) + "</span>" +
+      '<span class="who-tag ' + cls + '"><span class="dot"></span><span>' + esc(nameOf(e.p)) + "</span></span>" +
+      '<span class="dur">' + dur(e.secs) + "</span>" +
+      (e.demo ? '<span class="tag-demo">example</span>' : "") +
+      '<span class="note">' + esc(e.note || "") + "</span>" +
+      '<span class="acts">' +
+        '<button class="btn btn-sm btn-quiet" type="button" data-edit="' + esc(e.id) + '">Edit</button>' +
+        '<button class="btn btn-sm btn-quiet" type="button" data-del="' + esc(e.id) + '">Delete</button>' +
+      "</span></div>";
+  }
+
+  function editRow(e) {
+    var d = new Date(e.start);
+    var dateVal = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+    var timeVal = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    return '<div class="editrow">' +
+      '<div class="field"><label>Who</label><select id="eWho">' +
+        '<option value="a"' + (e.p === "a" ? " selected" : "") + ">" + esc(nameOf("a")) + "</option>" +
+        '<option value="b"' + (e.p === "b" ? " selected" : "") + ">" + esc(nameOf("b")) + "</option>" +
+      "</select></div>" +
+      '<div class="field"><label>Date</label><input id="eDate" type="date" value="' + dateVal + '"></div>' +
+      '<div class="field"><label>Started</label><input id="eTime" type="time" value="' + timeVal + '"></div>' +
+      '<div class="field"><label>Minutes</label><input id="eMins" type="number" min="1" max="1440" value="' +
+        Math.max(1, Math.round(e.secs / 60)) + '"></div>' +
+      '<div class="field grow"><label>Note</label><input id="eNote" maxlength="60" value="' + esc(e.note || "") + '"></div>' +
+      '<button class="btn btn-sm" type="button" data-save="' + esc(e.id) + '">Save</button>' +
+      '<button class="btn btn-sm btn-quiet" type="button" data-cancel="1">Cancel</button>' +
+      "</div>";
+  }
+
+  /* ============================ render: demo notice + names ============================ */
+  function renderNotice() {
+    var el = document.getElementById("demoNotice");
+    if (!hasDemo()) { el.innerHTML = ""; return; }
+    el.innerHTML = '<div class="notice"><p><b>These are example breaks</b>, filled in so you can see how the ' +
+      'ledger reads. None of it is yours &mdash; clear it whenever you are ready to start for real.</p>' +
+      '<button class="btn btn-sm" type="button" id="clearDemo">Clear examples</button></div>';
+  }
+  function renderNames() {
+    document.getElementById("n1").value = nameOf("a");
+    document.getElementById("n2").value = nameOf("b");
+    document.querySelectorAll("[data-nm]").forEach(function (n) { n.textContent = nameOf(n.getAttribute("data-nm")); });
+  }
+  function renderTabs() {
+    document.querySelectorAll("#tabs button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-period") === period));
+    });
+  }
+
+  function renderAll() {
+    renderNames(); renderNotice(); renderTabs();
+    renderBalance(); renderTimers(); renderChart(); renderLog();
+    var blob = document.getElementById("blob");
+    if (!document.querySelector("details.backup").open) blob.value = JSON.stringify(state);
+  }
+
+  /* ============================ actions ============================ */
+  function startBreak(p) {
+    if (state.running[p]) return;
+    state.running[p] = Date.now();
+    save(); renderAll();
+  }
+  function stopBreak(p) {
+    var began = state.running[p];
+    if (!began) return;
+    var secs = Math.round((Date.now() - began) / 1000);
+    state.running[p] = null;
+    if (secs >= 5) {
+      state.entries.push({ id: "e" + began + Math.floor(Math.random() * 1000), p: p, start: began, secs: secs, note: "" });
+    }
+    save(); renderAll();
+  }
+
+  document.getElementById("timers").addEventListener("click", function (ev) {
+    var s = ev.target.closest("[data-start]"), t = ev.target.closest("[data-stop]");
+    if (s) startBreak(s.getAttribute("data-start"));
+    if (t) stopBreak(t.getAttribute("data-stop"));
+  });
+
+  document.getElementById("tabs").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-period]");
+    if (!b) return;
+    period = b.getAttribute("data-period");
+    renderTabs(); renderBalance();
+  });
+
+  document.getElementById("names").addEventListener("change", onName);
+  document.getElementById("names").addEventListener("blur", onName, true);
+  function onName(ev) {
+    var i = ev.target.closest("[data-name]");
+    if (!i) return;
+    var v = i.value.trim().slice(0, 18);
+    if (!v) { i.value = nameOf(i.getAttribute("data-name")); return; }
+    state.names[i.getAttribute("data-name")] = v;
+    save(); renderAll();
+  }
+
+  document.getElementById("demoNotice").addEventListener("click", function (ev) {
+    if (!ev.target.closest("#clearDemo")) return;
+    state.entries = state.entries.filter(function (e) { return !e.demo; });
+    save(); renderAll();
+  });
+
+  /* --- add-by-hand form --- */
+  var addWho = "a";
+  document.getElementById("addWho").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-who]");
+    if (!b) return;
+    addWho = b.getAttribute("data-who");
+    syncWho();
+  });
+  function syncWho() {
+    document.querySelectorAll("#addWho button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-who") === addWho));
+    });
+  }
+  document.getElementById("addForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var date = document.getElementById("aDate").value;
+    var time = document.getElementById("aTime").value;
+    var mins = parseInt(document.getElementById("aMins").value, 10);
+    if (!date || !time || !(mins > 0)) return;
+    var parts = date.split("-"), hm = time.split(":");
+    var start = new Date(+parts[0], +parts[1] - 1, +parts[2], +hm[0], +hm[1], 0, 0).getTime();
+    state.entries.push({
+      id: "m" + Date.now() + Math.floor(Math.random() * 1000),
+      p: addWho, start: start, secs: mins * 60,
+      note: document.getElementById("aNote").value.trim().slice(0, 60)
+    });
+    document.getElementById("aNote").value = "";
+    save(); renderAll();
+  });
+
+  /* --- log edit / delete --- */
+  document.getElementById("log").addEventListener("click", function (ev) {
+    var ed = ev.target.closest("[data-edit]");
+    var del = ev.target.closest("[data-del]");
+    var sv = ev.target.closest("[data-save]");
+    var cx = ev.target.closest("[data-cancel]");
+    if (ed) { editing = ed.getAttribute("data-edit"); renderLog(); return; }
+    if (cx) { editing = null; renderLog(); return; }
+    if (del) {
+      var id = del.getAttribute("data-del");
+      state.entries = state.entries.filter(function (e) { return e.id !== id; });
+      editing = null; save(); renderAll(); return;
+    }
+    if (sv) {
+      var eid = sv.getAttribute("data-save");
+      var e = state.entries.filter(function (x) { return x.id === eid; })[0];
+      if (!e) return;
+      var dv = document.getElementById("eDate").value, tv = document.getElementById("eTime").value;
+      var mv = parseInt(document.getElementById("eMins").value, 10);
+      if (dv && tv && mv > 0) {
+        var pp = dv.split("-"), hh = tv.split(":");
+        e.start = new Date(+pp[0], +pp[1] - 1, +pp[2], +hh[0], +hh[1], 0, 0).getTime();
+        e.secs = mv * 60;
+        e.p = document.getElementById("eWho").value === "b" ? "b" : "a";
+        e.note = document.getElementById("eNote").value.trim().slice(0, 60);
+        delete e.demo;
+      }
+      editing = null; save(); renderAll();
+    }
+  });
+
+  /* --- chart tooltip (hover and keyboard focus alike) --- */
+  var tip = document.getElementById("tip");
+  function showTip(el) {
+    var txt = el.getAttribute("data-tip");
+    if (!txt) return;
+    var r = el.getBoundingClientRect();
+    tip.textContent = txt;
+    tip.style.left = Math.round(r.left + r.width / 2) + "px";
+    tip.style.top = Math.round(r.top) + "px";
+    tip.setAttribute("data-show", "true");
+  }
+  function hideTip() { tip.setAttribute("data-show", "false"); }
+  var chartEl = document.getElementById("chart");
+  chartEl.addEventListener("mouseover", function (ev) { var b = ev.target.closest(".bar"); if (b) showTip(b); });
+  chartEl.addEventListener("mouseout", hideTip);
+  chartEl.addEventListener("focusin", function (ev) { var b = ev.target.closest(".bar"); if (b) showTip(b); });
+  chartEl.addEventListener("focusout", hideTip);
+  window.addEventListener("scroll", hideTip, { passive: true });
+
+  /* --- backup & restore --- */
+  var say = document.getElementById("bSay");
+  document.querySelector("details.backup").addEventListener("toggle", function () {
+    if (this.open) document.getElementById("blob").value = JSON.stringify(state, null, 2);
+  });
+  document.getElementById("bCopy").addEventListener("click", function () {
+    var ta = document.getElementById("blob");
+    ta.value = JSON.stringify(state, null, 2);
+    ta.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(
+        function () { say.textContent = "Backup copied to your clipboard."; },
+        function () { say.textContent = "Copy blocked here — the text is selected, press Ctrl/Cmd+C."; }
+      );
+    } else {
+      say.textContent = "The text is selected — press Ctrl/Cmd+C to copy it.";
+    }
+  });
+  document.getElementById("bRestore").addEventListener("click", function () {
+    var txt = document.getElementById("blob").value.trim();
+    if (!txt) { say.textContent = "Paste a backup into the box first."; return; }
+    var parsed;
+    try { parsed = JSON.parse(txt); } catch (e) { say.textContent = "That is not readable backup text — paste the whole thing, including the outer braces."; return; }
+    if (!parsed || !Array.isArray(parsed.entries)) { say.textContent = "That backup has no breaks in it. Nothing was changed."; return; }
+    state = {
+      names: (parsed.names && parsed.names.a && parsed.names.b)
+        ? { a: String(parsed.names.a), b: String(parsed.names.b) } : state.names,
+      entries: parsed.entries.filter(valid),
+      running: parsed.running ? { a: num(parsed.running.a), b: num(parsed.running.b) } : { a: null, b: null },
+      seeded: true
+    };
+    save(); renderAll();
+    say.textContent = "Restored " + state.entries.length + " breaks.";
+  });
+  document.getElementById("bReset").addEventListener("click", function () {
+    if (!window.confirm("Erase every break for both of you? This cannot be undone.")) return;
+    state = blank();
+    state.seeded = true;
+    save(); renderAll();
+    say.textContent = "Everything erased. Fresh start.";
+  });
+
+  /* ============================ boot ============================ */
+  (function initForm() {
+    var now = new Date();
+    document.getElementById("aDate").value = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+    document.getElementById("aTime").value = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    syncWho();
+  })();
+
+  renderAll();
+  setInterval(tick, 1000);
+  /* A tab left open overnight should not still be showing yesterday's "today". */
+  var bootDay = startOfDay(Date.now());
+  setInterval(function () {
+    if (startOfDay(Date.now()) !== bootDay) { bootDay = startOfDay(Date.now()); renderAll(); }
+  }, 60000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && !editing) renderAll(); });
+})();
+</script>
+</body>
+</html>

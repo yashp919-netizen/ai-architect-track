@@ -227,6 +227,21 @@ body{
 .tabs button{font:inherit;font-size:.84rem;font-weight:600;color:var(--muted);background:transparent;border:0;padding:7px 13px;border-radius:7px;cursor:pointer;white-space:nowrap}
 .tabs button:hover{color:var(--ink)}
 .tabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin-top:10px}
+.fsel{display:flex;flex-direction:column;gap:4px}
+.fsel span{font-size:.64rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.fsel select,.fwin input{font:inherit;font-size:.84rem;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line-2);border-radius:8px;padding:7px 8px}
+.fwin{display:flex;align-items:flex-end;gap:6px}
+.fwin span{font-size:.78rem;color:var(--muted);padding-bottom:8px}
+.fnote{margin:10px 0 0;font-size:.78rem;color:var(--ink-2)}
+.fnote b{font-weight:600}
+.fnote em{font-style:normal;color:var(--muted)}
+.wsel{display:flex;gap:3px;background:var(--sunken);padding:3px;border-radius:8px}
+.wsel button{flex:1;font:inherit;font-size:.78rem;font-weight:600;color:var(--muted);background:transparent;
+  border:0;padding:6px 4px;border-radius:6px;cursor:pointer}
+.wsel button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.count{color:var(--muted);font-weight:500}
 .balance{margin-top:14px;padding:22px}
 .hero{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
 .hero-name{font-family:'Newsreader',Georgia,serif;font-weight:600;font-size:clamp(1.7rem,4.6vw,2.2rem);line-height:1.15}
@@ -358,6 +373,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   .rows.cats{grid-template-columns:1fr 68px 1fr}
   .catlab{font-size:.66rem}
   .tagbtn{font-size:.72rem;padding:5px 7px}
+  .fsel select,.fwin input{font-size:16px}
+  .fsel{flex:1 1 45%}
+  .fsel select{width:100%}
   .daylab{font-size:.63rem}
 
   /* iOS zooms the whole page when a focused field is under 16px */
@@ -417,6 +435,33 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       <button data-period="month" type="button">This month</button>
       <button data-period="all" type="button">All time</button>
     </div>
+    <div class="filters" id="filters">
+      <label class="fsel"><span>Days</span><select id="fDays">
+        <option value="any">Any day</option>
+        <option value="weekdays">Weekdays</option>
+        <option value="weekends">Weekends</option>
+        <option value="0">Sundays</option><option value="1">Mondays</option><option value="2">Tuesdays</option>
+        <option value="3">Wednesdays</option><option value="4">Thursdays</option><option value="5">Fridays</option>
+        <option value="6">Saturdays</option>
+      </select></label>
+      <label class="fsel"><span>Time of day</span><select id="fTime">
+        <option value="any">Any time</option>
+        <option value="am">Mornings, before noon</option>
+        <option value="pm">Afternoons, noon&ndash;6pm</option>
+        <option value="eve">Evenings, after 6pm</option>
+        <option value="custom">Between&hellip;</option>
+      </select></label>
+      <span class="fwin" id="fWin" hidden>
+        <input type="time" id="fFrom" value="18:00" aria-label="From"><span>to</span>
+        <input type="time" id="fTo" value="23:59" aria-label="To">
+      </span>
+      <label class="fsel"><span>Where</span><select id="fWhere">
+        <option value="any">Out or in</option>
+        <option value="out">Out only</option>
+        <option value="in">In only</option>
+      </select></label>
+      <button class="btn btn-sm btn-quiet" type="button" id="fClear" hidden>Clear filters</button>
+    </div>
     <div class="panel balance" id="balance"></div>
   </section>
 
@@ -445,6 +490,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         <div class="field"><label for="aTime">Started</label><input id="aTime" type="time" required></div>
         <div class="field"><label for="aMins">Minutes</label><input id="aMins" type="number" min="1" max="1440" step="1" value="30" required></div>
         <div class="field"><label for="aCat">Activity</label><select id="aCat"></select></div>
+        <div class="field"><label for="aWhere">Where</label><select id="aWhere"><option value="in">In</option><option value="out">Out</option></select></div>
         <div class="field grow"><label for="aNote">Note (optional)</label><input id="aNote" maxlength="60" placeholder="anything worth remembering" autocomplete="off"></div>
         <button class="btn" type="submit">Add break</button>
       </form>
@@ -492,14 +538,14 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
        local — this browser only, for the page opened as a file or hosted
      Everything below the adapter is written once and works on either.
      ============================================================ */
-  var BUILD = "v5 \u00b7 6 Sep 2026";
+  var BUILD = "v6 \u00b7 6 Sep 2026";
   var KEY = "breakLedger.v2";
   var DEFAULT_NAMES = { a: "Yash", b: "Kratika" };
   var mode = "local", db = null, months = {}, ready = true, syncErr = "";
   var state = blank();
 
   function blank() {
-    return { names: { a: DEFAULT_NAMES.a, b: DEFAULT_NAMES.b }, entries: [], running: { a: null, b: null } };
+    return { names: { a: DEFAULT_NAMES.a, b: DEFAULT_NAMES.b }, entries: [], running: { a: null, b: null }, runWhere: { a: "in", b: "in" } };
   }
   function num(v) { return typeof v === "number" && isFinite(v) && v > 0 ? v : null; }
   function valid(e) {
@@ -514,7 +560,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     { k: "walk", label: "Walk" }, { k: "gym", label: "Gym" },
     { k: "read", label: "Read" }, { k: "nap", label: "Nap" },
     { k: "social", label: "Social" }, { k: "screen", label: "Screen" },
-    { k: "food", label: "Food" }, { k: "other", label: "Other" }
+    { k: "food", label: "Food" }, { k: "ashvi", label: "Ashvi" },
+    { k: "together", label: "Together" }, { k: "other", label: "Other" }
   ];
   function catLabel(k) {
     for (var i = 0; i < CATS.length; i++) if (CATS[i].k === k) return CATS[i].label;
@@ -532,6 +579,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
           if (p.names && p.names.a && p.names.b) s.names = { a: String(p.names.a), b: String(p.names.b) };
           if (Array.isArray(p.entries)) s.entries = p.entries.filter(valid);
           if (p.running) s.running = { a: num(p.running.a), b: num(p.running.b) };
+          if (p.runWhere) s.runWhere = { a: p.runWhere.a || "in", b: p.runWhere.b || "in" };
         }
       }
     } catch (e) { /* private mode or blocked storage — run from memory */ }
@@ -561,7 +609,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   function writeConfig(name) {
     if (mode !== "cloud" || !db) return;
     var body = name === "people" ? { a: state.names.a, b: state.names.b }
-                                 : { a: state.running.a, b: state.running.b };
+                                 : { a: state.running.a, b: state.running.b,
+                                     aw: state.runWhere.a, bw: state.runWhere.b };
     db.doc("config/" + name).set(body).catch(onSyncErr);
   }
   function onSyncErr(e) {
@@ -583,6 +632,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     db.doc("config/running").onSnapshot(function (snap) {
       var v = snap.exists ? snap.data() : null;
       state.running = v ? { a: num(v.a), b: num(v.b) } : { a: null, b: null };
+      state.runWhere = { a: (v && v.aw) || "in", b: (v && v.bw) || "in" };
       renderAll();
     }, onSyncErr);
     db.collection("logs").onSnapshot(function (snap) {
@@ -626,13 +676,13 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         if (months[k].length !== before) touched[k] = 1;
       });
       var nk = monthKey(next.p, next.start);
-      months[nk] = (months[nk] || []).concat([{ id: id, p: next.p, start: next.start, secs: next.secs, note: next.note, cat: next.cat }]);
+      months[nk] = (months[nk] || []).concat([{ id: id, p: next.p, start: next.start, secs: next.secs, note: next.note, cat: next.cat, where: next.where }]);
       touched[nk] = 1;
       rebuild(); renderAll(); Object.keys(touched).forEach(writeMonth);
     } else {
       state.entries.forEach(function (e) {
         if (e.id !== id) return;
-        e.p = next.p; e.start = next.start; e.secs = next.secs; e.note = next.note; e.cat = next.cat;
+        e.p = next.p; e.start = next.start; e.secs = next.secs; e.note = next.note; e.cat = next.cat; e.where = next.where;
       });
       saveLocal(); renderAll();
     }
@@ -652,6 +702,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   }
   function setRunning(p, v) {
     state.running[p] = v;
+    if (v) state.runWhere[p] = startWhere[p];
     if (mode === "cloud") writeConfig("running"); else saveLocal();
     renderAll();
   }
@@ -673,7 +724,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       Object.keys(seen).forEach(writeMonth);
       writeConfig("people");
     } else {
-      state = { names: next.names, entries: next.entries, running: next.running };
+      state = { names: next.names, entries: next.entries, running: next.running, runWhere: { a: "in", b: "in" } };
       saveLocal(); renderAll();
     }
   }
@@ -712,6 +763,79 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   }
 
   /* ============================ queries ============================ */
+  /* Filters narrow every panel below the balance. "Hours after 6pm" means
+     hours actually inside that window, so a session straddling the edge is
+     clipped rather than counted whole or dropped. */
+  var filters = { days: "any", time: "any", from: 1080, to: 1439, where: "any" };
+  var WIN = { am: [0, 720], pm: [720, 1080], eve: [1080, 1440] };
+
+  function window_() {
+    if (filters.time === "any") return null;
+    if (filters.time === "custom") return [filters.from, Math.max(filters.from + 1, filters.to)];
+    return WIN[filters.time] || null;
+  }
+  function dayOk(t) {
+    if (filters.days === "any") return true;
+    var d = new Date(t).getDay();
+    if (filters.days === "weekdays") return d >= 1 && d <= 5;
+    if (filters.days === "weekends") return d === 0 || d === 6;
+    return String(d) === filters.days;
+  }
+  function whereOk(e) {
+    if (filters.where === "any") return true;
+    return e.where === filters.where;
+  }
+  function filtersOn() {
+    return filters.days !== "any" || filters.time !== "any" || filters.where !== "any";
+  }
+  /* Seconds of this entry that fall inside the time-of-day window. */
+  function clipped(e) {
+    var w = window_();
+    if (!w) return e.secs;
+    var d = new Date(e.start);
+    var s0 = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    var s1 = s0 + e.secs / 60;
+    if (s1 > 1440) s1 = 1440;              /* a session running past midnight stops at the day edge */
+    var lo = Math.max(s0, w[0]), hi = Math.min(s1, w[1]);
+    return hi <= lo ? 0 : (hi - lo) * 60;
+  }
+  function keep(e) { return dayOk(e.start) && whereOk(e); }
+
+  /* Filtered totals and counts, used by every panel except the live Today card. */
+  function fStat(p, from, to) {
+    var secs = 0, n = 0;
+    for (var i = 0; i < state.entries.length; i++) {
+      var e = state.entries[i];
+      if (e.p !== p) continue;
+      if (from && e.start < from) continue;
+      if (to && e.start >= to) continue;
+      if (!keep(e)) continue;
+      var c = clipped(e);
+      if (c <= 0) continue;
+      secs += c; n++;
+    }
+    return { secs: secs, n: n };
+  }
+  function fTotal(p, from, to) { return fStat(p, from, to).secs; }
+  function filterWords() {
+    var bits = [];
+    var dl = { weekdays: "weekdays", weekends: "weekends", "0": "Sundays", "1": "Mondays", "2": "Tuesdays",
+               "3": "Wednesdays", "4": "Thursdays", "5": "Fridays", "6": "Saturdays" };
+    if (filters.days !== "any") bits.push(dl[filters.days]);
+    var w = window_();
+    if (w) bits.push(filters.time === "eve" ? "after 6pm"
+      : filters.time === "am" ? "before noon"
+      : filters.time === "pm" ? "noon to 6pm"
+      : hhmm(w[0]) + " to " + hhmm(w[1]));
+    if (filters.where !== "any") bits.push(filters.where === "out" ? "out" : "in");
+    return bits.join(" \u00b7 ");
+  }
+  function hhmm(m) {
+    m = Math.min(1439, Math.round(m));
+    var h = Math.floor(m / 60), mm = m % 60, ap = h < 12 ? "am" : "pm", hh = h % 12 === 0 ? 12 : h % 12;
+    return hh + (mm ? ":" + pad(mm) : "") + ap;
+  }
+
   var period = "week";
   var PERIOD_LABEL = { today: "today", week: "this week", month: "this month", all: "all time" };
   function periodStart() {
@@ -738,6 +862,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     return t;
   }
   function totalWithLive(p, from, to) { return totalFor(p, from, to) + (to ? 0 : liveSecs(p, from)); }
+  /* The balance and the charts read through the filters; a live break only
+     joins them when no filter could exclude it. */
+  function fWithLive(p, from) { return fTotal(p, from) + (filtersOn() ? 0 : liveSecs(p, from)); }
   function nameOf(p) { return state.names[p] || DEFAULT_NAMES[p]; }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -816,6 +943,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         '" stroke-dashoffset="' + (CIRC * (1 - Math.min(1, frac))).toFixed(1) + '"/></svg>';
   }
   var tagging = null;
+  var startWhere = { a: "in", b: "in" };
   function renderTimers() {
     var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
     document.getElementById("timers").innerHTML = ["a", "b"].map(function (p) {
@@ -829,6 +957,13 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
            '<span class="dial-val"><span class="dial-num" data-live="' + p + '">' +
            (running ? clock(shown) : dur(today)) + '</span>' +
            '<span class="dial-cap">' + (running ? "on a break" : "today") + "</span></span></div>";
+      if (!running) {
+        s += '<div class="wsel" role="group" aria-label="Where the break is">' +
+          ["in", "out"].map(function (w) {
+            return '<button type="button" data-where="' + p + ":" + w + '" aria-pressed="' +
+              (startWhere[p] === w ? "true" : "false") + '">' + (w === "in" ? "In" : "Out") + "</button>";
+          }).join("") + "</div>";
+      }
       s += running
         ? '<button class="btn btn-stop" type="button" data-stop="' + p + '">Stop &amp; log it</button>'
         : '<button class="btn btn-go" type="button" data-start="' + p + '">Start a break</button>';
@@ -917,13 +1052,16 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var el = document.getElementById("balance");
     if (!ready) { el.innerHTML = '<p class="loading">Fetching the breaks you have both logged…</p>'; return; }
     var from = periodStart();
-    var a = totalWithLive("a", from), b = totalWithLive("b", from);
+    var sa = fStat("a", from), sb = fStat("b", from);
+    var a = sa.secs + (filtersOn() ? 0 : liveSecs("a", from));
+    var b = sb.secs + (filtersOn() ? 0 : liveSecs("b", from));
     var total = a + b, diff = Math.abs(a - b), lead = a === b ? null : (a > b ? "a" : "b");
     var label = PERIOD_LABEL[period], html = "";
+    var words = filterWords();
 
     if (total === 0) {
-      html += '<p class="eyebrow">Ahead ' + esc(label) + "</p>" +
-        '<div class="hero"><span class="hero-name">Nothing logged yet</span></div>' +
+      html += '<p class="eyebrow">Ahead ' + esc(label) + (words ? " &middot; " + esc(words) : "") + "</p>" +
+        '<div class="hero"><span class="hero-name">' + (words ? "Nothing matches" : "Nothing logged yet") + "</span></div>" +
         '<div class="beam"><div class="beam-empty">no break time ' + esc(label) + "</div></div>" +
         '<div class="fulcrum"></div>' +
         '<p class="fulcrum-note">Press a timer above when either of you steps away, or add a break by hand below.</p>';
@@ -935,7 +1073,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var st = (diff <= 600 || share <= 0.12) ? "even" : (share <= 0.3 ? "off" : "lopsided");
     var stText = st === "even" ? "Pretty even" : st === "off" ? "A little uneven" : "Lopsided";
 
-    html += '<p class="eyebrow">Ahead ' + esc(label) + '</p><div class="hero">';
+    html += '<p class="eyebrow">Ahead ' + esc(label) + (words ? " &middot; " + esc(words) : "") + '</p><div class="hero">';
     if (!lead) html += '<span class="hero-name">Dead even</span>';
     else {
       var v = lead === "a" ? "1" : "2";
@@ -954,9 +1092,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       '<div class="beam-mid"></div></div><div class="fulcrum"></div>';
     html += '<div class="legend">' +
       '<span class="legend-item"><span class="dot p1"></span>' + esc(nameOf("a")) + ' <b>' + dur(a) +
-        '</b> <span class="pct">' + Math.round(pa) + "%</span></span>" +
-      '<span class="legend-item"><span class="pct">' + Math.round(100 - pa) + '%</span> <b>' + dur(b) +
-        "</b> " + esc(nameOf("b")) + '<span class="dot p2"></span></span></div>';
+        '</b> <span class="count">&times;' + sa.n + '</span> <span class="pct">' + Math.round(pa) + "%</span></span>" +
+      '<span class="legend-item"><span class="pct">' + Math.round(100 - pa) + '%</span> <span class="count">&times;' +
+        sb.n + '</span> <b>' + dur(b) + "</b> " + esc(nameOf("b")) + '<span class="dot p2"></span></span></div>';
     html += '<p class="fulcrum-note">The centre line is an even split — ' + dur(total / 2) + " each of " + dur(total) + " total.</p>";
     el.innerHTML = html;
   }
@@ -974,8 +1112,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var today = startOfDay(Date.now()), rows = [], max = 0;
     for (var i = DAYS - 1; i >= 0; i--) {
       var from = today - i * DAY, to = from + DAY;
-      var a = totalFor("a", from, to) + (i === 0 ? liveSecs("a") : 0);
-      var b = totalFor("b", from, to) + (i === 0 ? liveSecs("b") : 0);
+      var a = fTotal("a", from, to) + (i === 0 && !filtersOn() ? liveSecs("a") : 0);
+      var b = fTotal("b", from, to) + (i === 0 && !filtersOn() ? liveSecs("b") : 0);
       max = Math.max(max, a, b);
       rows.push({ from: from, a: a, b: b, isToday: i === 0 });
     }
@@ -1018,10 +1156,14 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var tally = {}, max = 0, anyUntagged = false;
     state.entries.forEach(function (e) {
       if (from && e.start < from) return;
+      if (!keep(e)) return;
+      var c = clipped(e);
+      if (c <= 0) return;
       var k = catLabel(e.cat) ? e.cat : "";
       if (!k) anyUntagged = true;
-      if (!tally[k]) tally[k] = { a: 0, b: 0 };
-      tally[k][e.p] += e.secs;
+      if (!tally[k]) tally[k] = { a: 0, b: 0, na: 0, nb: 0 };
+      tally[k][e.p] += c;
+      tally[k][e.p === "a" ? "na" : "nb"] += 1;
     });
     /* Real activities rank by size; untagged is a remainder, so it sits last
        however big it is. */
@@ -1032,7 +1174,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     keys.forEach(function (k) { max = Math.max(max, tally[k].a, tally[k].b); });
 
     if (!keys.length) {
-      el.innerHTML = '<p class="empty">No breaks ' + esc(label) + " yet. Once there are a few, this shows what each of you spent that time on.</p>";
+      el.innerHTML = '<p class="empty">' + (filtersOn()
+        ? "No breaks match these filters."
+        : "No breaks " + esc(label) + " yet. Once there are a few, this shows what each of you spent that time on.") + "</p>";
       return;
     }
     if (max === 0) { el.innerHTML = '<p class="empty">Nothing to measure ' + esc(label) + ".</p>"; return; }
@@ -1041,20 +1185,24 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       '</span><span class="legend-item">' + esc(nameOf("b")) + '<span class="dot p2"></span></span></div><div class="rows cats">';
     keys.forEach(function (k) {
       var name = catLabel(k) || "untagged";
-      html += '<div class="track left">' + catBar(tally[k].a, max, "a", k, name) + "</div>" +
+      html += '<div class="track left">' + catBar(tally[k].a, max, "a", k, name, tally[k].na) + "</div>" +
         '<div class="catlab' + (k ? "" : " none") + '">' + esc(name) + "</div>" +
-        '<div class="track right">' + catBar(tally[k].b, max, "b", k, name) + "</div>";
+        '<div class="track right">' + catBar(tally[k].b, max, "b", k, name, tally[k].nb) + "</div>";
     });
     html += "</div>";
-    html += '<p class="chart-foot">Break time ' + esc(label) + ", by activity. Full width either side = " + dur(max) +
+    var scope = label === "all time" ? "in total" : label;
+    var fw = filterWords();
+    html += '<p class="chart-foot">Break time ' + esc(scope) + (fw ? ", " + esc(fw) : "") +
+      ", by activity. Full width either side = " + dur(max) +
       ", so a longer bar always means more minutes whichever side it is on." +
       (anyUntagged ? " Untagged breaks are the ones nobody said what they were — tag them from the log." : "") + "</p>";
     el.innerHTML = html;
   }
-  function catBar(v, max, p, k, name) {
+  function catBar(v, max, p, k, name, n) {
     if (v <= 0) return "";
     return '<button class="bar ' + (k ? (p === "a" ? "p1" : "p2") : "none") + '" type="button" style="width:' +
-      Math.max(2.5, (v / max) * 100).toFixed(2) + '%" data-tip="' + esc(nameOf(p) + " · " + name + " · " + dur(v)) +
+      Math.max(2.5, (v / max) * 100).toFixed(2) + '%" data-tip="' +
+      esc(nameOf(p) + " · " + name + " · " + dur(v) + " · " + n + "\u00d7") +
       '" aria-label="' + esc(nameOf(p) + ", " + dur(v) + " on " + name) + '"></button>';
   }
 
@@ -1063,8 +1211,12 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   function renderLog() {
     var el = document.getElementById("log");
     if (!ready) { el.innerHTML = '<p class="loading">Loading the log…</p>'; return; }
-    var list = state.entries.slice().sort(function (x, y) { return y.start - x.start; });
-    if (!list.length) { el.innerHTML = '<p class="empty">No breaks logged yet.</p>'; return; }
+    var list = state.entries.filter(function (e) { return keep(e) && clipped(e) > 0; })
+      .sort(function (x, y) { return y.start - x.start; });
+    if (!list.length) {
+      el.innerHTML = '<p class="empty">' + (filtersOn() ? "No breaks match these filters." : "No breaks logged yet.") + "</p>";
+      return;
+    }
     var groups = [], byDay = {};
     list.forEach(function (e) {
       var k = dayKey(e.start);
@@ -1084,7 +1236,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     return '<div class="entry"><span class="when">' + esc(timeOfDay(e.start)) + "&ndash;" +
       esc(timeOfDay(e.start + e.secs * 1000)) + '</span><span class="who-tag ' + (e.p === "a" ? "p1" : "p2") +
       '"><span class="dot"></span><span>' + esc(nameOf(e.p)) + '</span></span><span class="dur">' + dur(e.secs) +
-      "</span>" + (catLabel(e.cat) ? '<span class="tag-cat">' + esc(catLabel(e.cat)) + "</span>" : "") +
+      "</span>" + (e.where === "out" ? '<span class="tag-cat">Out</span>' : "") +
+      (catLabel(e.cat) ? '<span class="tag-cat">' + esc(catLabel(e.cat)) + "</span>" : "") +
       '<span class="note">' + esc(e.note || "") + '</span><span class="acts">' +
       '<button class="btn btn-sm btn-quiet" type="button" data-edit="' + esc(e.id) + '">Edit</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-del="' + esc(e.id) + '">Delete</button></span></div>';
@@ -1106,6 +1259,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       '<div class="field"><label for="eMins">Minutes</label><input id="eMins" type="number" min="1" max="1440" value="' +
         Math.max(1, Math.round(e.secs / 60)) + '"></div>' +
       '<div class="field"><label for="eCat">Activity</label><select id="eCat">' + catOptions(e.cat) + "</select></div>" +
+      '<div class="field"><label for="eWhere">Where</label><select id="eWhere">' +
+        '<option value="in"' + (e.where !== "out" ? " selected" : "") + ">In</option>" +
+        '<option value="out"' + (e.where === "out" ? " selected" : "") + ">Out</option></select></div>" +
       '<div class="field grow"><label for="eNote">Note</label><input id="eNote" maxlength="60" value="' + esc(e.note || "") + '"></div>' +
       '<button class="btn btn-sm" type="button" data-save="' + esc(e.id) + '">Save</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-cancel="1">Cancel</button></div>';
@@ -1132,6 +1288,13 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   /* ============================ actions ============================ */
   document.getElementById("timers").addEventListener("click", function (ev) {
     var s = ev.target.closest("[data-start]"), t = ev.target.closest("[data-stop]");
+    var wsel = ev.target.closest("[data-where]");
+    if (wsel) {
+      var parts = wsel.getAttribute("data-where").split(":");
+      startWhere[parts[0]] = parts[1];
+      renderTimers();
+      return;
+    }
     if (s) { var p = s.getAttribute("data-start"); if (!state.running[p]) { tagging = null; setRunning(p, Date.now()); } }
     var tag = ev.target.closest("[data-tag]");
     if (tag) {
@@ -1150,7 +1313,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         var id = newId();
         tagging = { id: id, p: q };
         setRunning(q, null);
-        addEntry({ id: id, p: q, start: began, secs: secs, note: "" });
+        addEntry({ id: id, p: q, start: began, secs: secs, note: "", where: state.runWhere[q] || "in" });
       } else {
         setRunning(q, null);
       }
@@ -1162,6 +1325,32 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     period = b.getAttribute("data-period");
     renderTabs(); renderBalance(); renderWhere();
   });
+  function minutesOf(v) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(v || "");
+    return m ? Math.min(1439, (+m[1]) * 60 + (+m[2])) : null;
+  }
+  function readFilters() {
+    filters.days = document.getElementById("fDays").value;
+    filters.time = document.getElementById("fTime").value;
+    filters.where = document.getElementById("fWhere").value;
+    var f = minutesOf(document.getElementById("fFrom").value);
+    var t = minutesOf(document.getElementById("fTo").value);
+    if (f !== null) filters.from = f;
+    if (t !== null) filters.to = t;
+    document.getElementById("fWin").hidden = filters.time !== "custom";
+    document.getElementById("fClear").hidden = !filtersOn();
+    renderAll();
+  }
+  ["fDays", "fTime", "fWhere", "fFrom", "fTo"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", readFilters);
+  });
+  document.getElementById("fClear").addEventListener("click", function () {
+    document.getElementById("fDays").value = "any";
+    document.getElementById("fTime").value = "any";
+    document.getElementById("fWhere").value = "any";
+    readFilters();
+  });
+
   document.getElementById("names").addEventListener("change", onName);
   document.getElementById("names").addEventListener("blur", onName, true);
   function onName(ev) {
@@ -1192,6 +1381,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     addEntry({ id: newId(), p: addWho,
       start: new Date(+d[0], +d[1] - 1, +d[2], +hm[0], +hm[1], 0, 0).getTime(),
       secs: mins * 60, cat: document.getElementById("aCat").value || undefined,
+      where: document.getElementById("aWhere").value,
       note: document.getElementById("aNote").value.trim().slice(0, 60) });
     document.getElementById("aNote").value = "";
   });
@@ -1212,6 +1402,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         saveEntry(eid, { p: document.getElementById("eWho").value === "b" ? "b" : "a",
           start: new Date(+pp[0], +pp[1] - 1, +pp[2], +hh[0], +hh[1], 0, 0).getTime(),
           secs: mv * 60, cat: document.getElementById("eCat").value || undefined,
+          where: document.getElementById("eWhere").value || undefined,
           note: document.getElementById("eNote").value.trim().slice(0, 60) });
       } else renderLog();
     }
@@ -1323,7 +1514,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       ? "Replace the shared ledger for both of you with this backup?"
       : "Replace everything in this app with this backup?")) return;
     var entries = parsed.entries.filter(valid).map(function (e) {
-      return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "", cat: e.cat };
+      return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "", cat: e.cat, where: e.where };
     });
     replaceAll({
       names: (parsed.names && parsed.names.a && parsed.names.b)

@@ -1,0 +1,1188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Break Ledger</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png" sizes="192x192">
+<meta name="apple-mobile-web-app-title" content="Break Ledger">
+<meta name="theme-color" content="#F4F3F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131218" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+/* ---------- tokens: light is the base, both dark states re-declare ---------- */
+:root{
+  --ground:#F4F3F7;
+  --surface:#FFFFFF;
+  --raised:#FFFFFF;
+  --sunken:#EAE8F1;
+  --ink:#1B1A24;
+  --ink-2:#413E52;
+  --muted:#6E6A82;
+  --line:#E1DEEA;
+  --line-2:#C8C4D6;
+  --p1:#4C4FBF;
+  --p2:#B8791C;
+  --p1-wash:#EDEDFA;
+  --p2-wash:#FAF2E3;
+  --on1:#FFFFFF;
+  --on2:#171009;
+  --glow1:rgba(76,79,191,.09);
+  --glow2:rgba(184,121,28,.08);
+  --shadow:0 1px 2px rgba(27,26,36,.05), 0 10px 26px -16px rgba(27,26,36,.28);
+  --lift:0 1px 2px rgba(27,26,36,.06), 0 18px 40px -24px rgba(27,26,36,.42);
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121116;
+    --surface:#1B1A23;
+    --raised:#211F2B;
+    --sunken:#282634;
+    --ink:#EDEBF3;
+    --ink-2:#C6C2D6;
+    --muted:#928DA6;
+    --line:#2C2A38;
+    --line-2:#413E53;
+    --p1:#7477DC;
+    --p2:#C08528;
+    --p1-wash:#232241;
+    --p2-wash:#2F2718;
+    --on1:#12121F;
+    --on2:#171009;
+    --glow1:rgba(116,119,220,.14);
+    --glow2:rgba(192,133,40,.10);
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -16px rgba(0,0,0,.85);
+    --lift:0 1px 2px rgba(0,0,0,.5), 0 20px 44px -26px rgba(0,0,0,1);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121116;
+  --surface:#1B1A23;
+  --raised:#211F2B;
+  --sunken:#282634;
+  --ink:#EDEBF3;
+  --ink-2:#C6C2D6;
+  --muted:#928DA6;
+  --line:#2C2A38;
+  --line-2:#413E53;
+  --p1:#7477DC;
+  --p2:#C08528;
+  --p1-wash:#232241;
+  --p2-wash:#2F2718;
+  --on1:#12121F;
+  --on2:#171009;
+  --glow1:rgba(116,119,220,.14);
+  --glow2:rgba(192,133,40,.10);
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -16px rgba(0,0,0,.85);
+  --lift:0 1px 2px rgba(0,0,0,.5), 0 20px 44px -26px rgba(0,0,0,1);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+button{-webkit-user-select:none;user-select:none;touch-action:manipulation}
+body{
+  margin:0;
+  color:var(--ink);
+  font-family:'Schibsted Grotesk','Helvetica Neue',Arial,sans-serif;
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(58% 40% at 6% -6%, var(--glow1), transparent 68%),
+    radial-gradient(58% 40% at 98% -8%, var(--glow2), transparent 68%),
+    var(--ground);
+  background-attachment:fixed;
+  overscroll-behavior-y:contain;
+}
+:focus-visible{outline:2px solid var(--p1);outline-offset:2px;border-radius:5px}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;transition-duration:.001ms !important}}
+
+.wrap{
+  max-width:1020px;margin:0 auto;
+  padding:calc(30px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right))
+          calc(72px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
+}
+.eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0}
+
+/* ---------- masthead ---------- */
+.masthead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 18px}
+.masthead h1{
+  font-family:'Newsreader',Georgia,serif;font-weight:600;
+  font-size:clamp(1.9rem,5vw,2.6rem);line-height:1;margin:0;letter-spacing:-.015em;
+}
+.mast-meta{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--muted);padding-bottom:3px}
+.mast-meta b{color:var(--ink-2);font-weight:600}
+.mast-meta .sep{width:4px;height:4px;border-radius:50%;background:var(--line-2)}
+.tagline{margin:8px 0 0;color:var(--muted);font-size:.9rem;max-width:58ch}
+
+/* ---------- names bar ---------- */
+.names{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:20px 0 0;padding:11px 14px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+}
+.namefield{display:flex;align-items:center;gap:8px}
+.namefield input{
+  font:inherit;font-weight:600;color:var(--ink);background:transparent;border:0;
+  border-bottom:1px dashed var(--line-2);padding:2px 2px 3px;width:9ch;min-width:0;
+}
+.namefield input:hover{border-bottom-color:var(--ink-2)}
+.namefield input:focus{outline:none;border-bottom:1px solid var(--c,var(--p1))}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.p1{--c:var(--p1);--on:var(--on1);--wash:var(--p1-wash)}
+.p2{--c:var(--p2);--on:var(--on2);--wash:var(--p2-wash)}
+.sync{display:inline-flex;align-items:center;gap:7px;margin-left:auto;font-size:.72rem;font-weight:600;color:var(--muted);white-space:nowrap}
+.sync .dot{--c:var(--muted);width:7px;height:7px}
+.sync[data-mode="cloud"]{color:var(--ink-2)}
+.sync[data-mode="cloud"] .dot{--c:var(--p1);animation:pulse 2.4s ease-in-out infinite}
+.sync[data-mode="stalled"] .dot{--c:var(--p2)}
+
+.hint{
+  display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:16px;padding:11px 13px;
+  border:1px dashed var(--line-2);border-radius:var(--radius);background:var(--surface);
+  font-size:.85rem;color:var(--ink-2);
+}
+.hint p{margin:0;flex:1 1 220px}
+.hint b{color:var(--ink)}
+.section{margin-top:34px}
+.section > .eyebrow{margin-bottom:11px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.loading,.empty{color:var(--muted);font-size:.9rem;padding:12px 2px}
+
+/* ---------- today: the hero ---------- */
+.today{
+  margin-top:14px;padding:22px 20px 20px;border-radius:16px;
+  background:var(--raised);border:1px solid var(--line);box-shadow:var(--lift);
+}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:16px}
+.card{
+  border:1px solid var(--line);border-radius:14px;padding:18px 16px 16px;
+  display:flex;flex-direction:column;gap:13px;position:relative;overflow:hidden;
+  background:linear-gradient(178deg, var(--wash) 0%, var(--surface) 52%);
+  transition:border-color .2s;
+}
+.card[data-running="true"]{border-color:var(--c);box-shadow:0 0 0 1px var(--c) inset}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:22px}
+.card-name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:1rem;letter-spacing:-.005em}
+.live-tag{display:flex;align-items:center;gap:6px;font-size:.66rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--c)}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--c);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.22}}
+
+.dial-wrap{position:relative;width:158px;height:158px;margin:2px auto 0}
+.dial{width:100%;height:100%;transform:rotate(-90deg);display:block}
+.dial-track{fill:none;stroke:var(--sunken);stroke-width:7}
+.dial-arc{fill:none;stroke:var(--c);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .7s cubic-bezier(.3,.8,.4,1)}
+.dial-ticks line{stroke:var(--line-2);stroke-width:1.5;stroke-linecap:round}
+.dial-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.dial-num{
+  font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:1.9rem;font-weight:500;letter-spacing:-.045em;line-height:1;
+}
+.dial-cap{font-size:.62rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+
+.btn{font:inherit;font-weight:600;font-size:.92rem;cursor:pointer;border-radius:9px;padding:11px 14px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);transition:filter .14s,border-color .14s}
+.btn:hover{border-color:var(--ink-2)}
+.btn-go{background:var(--c);border-color:var(--c);color:var(--on);width:100%}
+.btn-go:hover{filter:brightness(1.09);border-color:var(--c)}
+.btn-stop{background:transparent;border:1px solid var(--c);color:var(--c);width:100%}
+.btn-stop:hover{background:var(--wash);border-color:var(--c)}
+.btn-sm{padding:6px 10px;font-size:.8rem;border-radius:7px}
+.btn-quiet{background:transparent;border-color:transparent;color:var(--muted)}
+.btn-quiet:hover{color:var(--ink);border-color:var(--line-2)}
+.card-foot{display:flex;gap:16px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:11px}
+.card-foot b{color:var(--ink-2);font-weight:600;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+
+/* ---------- today's timeline ---------- */
+.tl{display:flex;flex-direction:column;gap:5px;margin-top:20px;padding-top:17px;border-top:1px solid var(--line)}
+.tl-cap{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:4px}
+.tl-range{font-size:.68rem;font-weight:600;letter-spacing:.05em;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.tl-row{display:grid;grid-template-columns:60px 1fr;align-items:center;gap:10px}
+.tl-name{display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-track{position:relative;height:28px}
+.tl-axis{height:15px}
+.tl-lane{background:var(--sunken);border-radius:7px;overflow:hidden}
+.tl-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--line-2);opacity:.45}
+.tl-hour{position:absolute;top:1px;font-size:.63rem;color:var(--muted);transform:translateX(-50%);white-space:nowrap}
+.tlb{position:absolute;top:4px;bottom:4px;background:var(--c);border-radius:5px;border:0;padding:0;cursor:pointer;min-width:3px}
+.tlb:hover,.tlb:focus-visible{filter:brightness(1.14)}
+.tlb[data-live="1"]{background:repeating-linear-gradient(115deg,var(--c) 0 7px,color-mix(in srgb,var(--c) 74%,transparent) 7px 14px)}
+.tl-now{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.5;border-radius:1px}
+.tl-none{position:absolute;inset:0;display:flex;align-items:center;padding-left:11px;font-size:.75rem;color:var(--muted)}
+
+/* ---------- period tabs + balance ---------- */
+.tabs{display:flex;gap:2px;background:var(--sunken);padding:3px;border-radius:9px;width:max-content;max-width:100%;overflow-x:auto}
+.tabs button{font:inherit;font-size:.84rem;font-weight:600;color:var(--muted);background:transparent;border:0;padding:7px 13px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.balance{margin-top:14px;padding:22px}
+.hero{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.hero-name{font-family:'Newsreader',Georgia,serif;font-weight:600;font-size:clamp(1.7rem,4.6vw,2.2rem);line-height:1.15}
+.hero-gap{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:clamp(1.7rem,4.6vw,2.2rem);font-weight:500;color:var(--c,var(--ink));letter-spacing:-.03em}
+.hero-dot{width:13px;height:13px;border-radius:50%;background:var(--c);align-self:center}
+.chip{display:inline-block;font-size:.71rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted)}
+.chip[data-state="even"]{color:var(--ink-2);background:var(--sunken)}
+.chip[data-state="off"]{border-style:dashed}
+.chip[data-state="lopsided"]{border-color:var(--ink-2);color:var(--ink);font-weight:700}
+.beam{display:flex;gap:2px;height:24px;margin:20px 0 0;position:relative;background:var(--sunken);border-radius:6px;overflow:hidden}
+.beam-fill{background:var(--c);min-width:0}
+.beam-fill:first-child{border-radius:6px 0 0 6px}
+.beam-fill.p2{border-radius:0 6px 6px 0}
+.beam-tick{position:absolute;top:0;bottom:0;width:1px;background:var(--surface);opacity:.34}
+.beam-mid{position:absolute;left:50%;top:0;bottom:0;width:0;border-left:2px solid var(--surface);opacity:.92;transform:translateX(-1px)}
+.beam-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted)}
+.fulcrum{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:8px solid var(--line-2);margin:0 auto}
+.legend{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 18px;margin-top:9px}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:.86rem;color:var(--ink-2)}
+.legend-item b{color:var(--ink);font-weight:600}
+.legend-item .pct{color:var(--muted)}
+.fulcrum-note{margin-top:10px;font-size:.76rem;color:var(--muted)}
+
+/* ---------- diverging day chart ---------- */
+.chart{margin-top:14px;padding:18px 16px 14px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.chart-head .legend-item{font-size:.82rem;font-weight:600}
+.rows{display:grid;grid-template-columns:1fr 62px 1fr;gap:4px 6px;align-items:center}
+.track{display:flex;height:15px;align-items:stretch}
+.track.left{justify-content:flex-end}
+.bar{background:var(--c);min-width:0;border:0;padding:0;cursor:pointer;display:block}
+.track.left .bar{border-radius:5px 1px 1px 5px;margin-right:2px}
+.track.right .bar{border-radius:1px 5px 5px 1px;margin-left:2px}
+.bar:hover,.bar:focus-visible{filter:brightness(1.14)}
+.daylab{text-align:center;font-size:.7rem;color:var(--muted);white-space:nowrap;border-left:1px solid var(--line-2);border-right:1px solid var(--line-2)}
+.daylab.is-today{color:var(--ink);font-weight:700}
+.chart-foot{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted)}
+#tip{position:fixed;z-index:40;pointer-events:none;opacity:0;transform:translate(-50%,-118%);background:var(--ink);color:var(--ground);font-size:.76rem;font-weight:500;padding:6px 9px;border-radius:7px;white-space:nowrap;box-shadow:0 8px 22px -10px rgba(0,0,0,.7);transition:opacity .1s}
+#tip[data-show="true"]{opacity:1}
+
+/* ---------- forms & log ---------- */
+.form{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{font:inherit;font-size:.9rem;color:var(--ink);background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;min-width:0}
+.field input[type="number"]{width:8ch}
+.field.grow{flex:1 1 170px}
+.field.grow input{width:100%}
+.who{display:flex;gap:4px;background:var(--sunken);padding:3px;border-radius:9px}
+.who button{font:inherit;font-size:.85rem;font-weight:600;color:var(--muted);background:transparent;border:0;padding:7px 12px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:7px}
+.who button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.daygroup{margin-top:18px}
+.daygroup:first-child{margin-top:0}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-bottom:7px;border-bottom:1px solid var(--line);margin-bottom:2px}
+.dayhead .d{font-weight:600;font-size:.88rem}
+.dayhead .t{font-size:.78rem;color:var(--muted);display:flex;gap:12px}
+.dayhead .t span{display:flex;align-items:center;gap:6px}
+.entry{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:0}
+.entry .when{font-size:.78rem;color:var(--muted);width:17ch;flex:none;font-family:'IBM Plex Mono',monospace}
+.entry .who-tag{display:flex;align-items:center;gap:7px;font-size:.87rem;font-weight:500;flex:1 1 90px;min-width:0}
+.entry .who-tag span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry .dur{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-weight:500;font-size:.9rem;flex:none}
+.entry .note{font-size:.83rem;color:var(--muted);flex:2 1 110px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry .acts{display:flex;gap:2px;flex:none}
+.editrow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:12px 8px;background:var(--sunken);border-radius:9px;margin:6px 0}
+details.backup{margin-top:34px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 16px}
+details.backup > summary{cursor:pointer;padding:13px 0;font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);list-style:none}
+details.backup > summary::-webkit-details-marker{display:none}
+details.backup > summary::before{content:"+ ";font-family:'IBM Plex Mono',monospace}
+details.backup[open] > summary::before{content:"– "}
+.backup-body{padding-bottom:16px;display:flex;flex-direction:column;gap:10px}
+.backup-body p{margin:0;font-size:.85rem;color:var(--muted);max-width:62ch}
+textarea#blob{font-family:'IBM Plex Mono',monospace;font-size:.74rem;line-height:1.5;width:100%;height:130px;resize:vertical;color:var(--ink-2);background:var(--sunken);border:1px solid var(--line);border-radius:9px;padding:10px}
+.rowbtns{display:flex;flex-wrap:wrap;gap:8px}
+.say{font-size:.82rem;color:var(--muted);min-height:1.2em}
+footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65;border-top:1px solid var(--line);padding-top:14px}
+
+@media (max-width:600px){
+  /* Both dials stay side by side — this is a comparison, so one must never
+     scroll out of view while you look at the other. */
+  .wrap{padding-left:calc(13px + env(safe-area-inset-left));padding-right:calc(13px + env(safe-area-inset-right))}
+  .cards{grid-template-columns:1fr 1fr;gap:9px}
+  .card{padding:12px 9px 11px;gap:9px;border-radius:12px}
+  .card-name{font-size:.85rem;gap:6px}
+  .card-top{min-height:18px}
+  .live-tag{font-size:.58rem;letter-spacing:.07em;gap:4px}
+  .dial-wrap{width:100%;max-width:124px;height:auto;aspect-ratio:1}
+  .dial-num{font-size:1.28rem;letter-spacing:-.05em}
+  .dial-cap{font-size:.55rem;letter-spacing:.08em}
+  .btn{padding:10px 8px;font-size:.85rem}
+  .card-foot{flex-direction:column;gap:2px;font-size:.72rem;padding-top:9px}
+  .today{padding:14px 11px 13px;border-radius:14px}
+
+  .masthead h1{font-size:1.7rem}
+  .mast-meta{font-size:.76rem}
+  .names{gap:8px 12px;padding:10px 12px}
+  .names .eyebrow{flex-basis:100%}
+  .sync{margin-left:0;flex-basis:100%}
+  .namefield input{width:8ch}
+
+  .tl-row{grid-template-columns:56px 1fr;gap:7px}
+  .tl-name{font-size:.68rem;gap:5px}
+  .tl-track{height:24px}
+  .tl-hour{font-size:.58rem}
+
+  .hero-name,.hero-gap{font-size:1.5rem}
+  .balance{padding:16px 14px}
+  .legend{gap:6px 10px}
+  .legend-item{font-size:.8rem}
+  .panel{padding:14px 12px}
+  .rows{grid-template-columns:1fr 50px 1fr}
+  .daylab{font-size:.63rem}
+
+  /* iOS zooms the whole page when a focused field is under 16px */
+  .field input,.field select,textarea#blob{font-size:16px}
+  .field.grow{flex-basis:100%}
+  .form{gap:9px 10px}
+
+  /* Two tidy lines per break: who + how long + controls, then when + note. */
+  .entry{flex-wrap:wrap;gap:2px 9px;padding:9px 2px}
+  .entry .who-tag{flex:1 1 auto;order:1}
+  .entry .dur{order:2}
+  .entry .acts{order:3;margin-left:auto}
+  .entry .when{order:4;width:auto;flex:none;font-size:.72rem}
+  .entry .note{order:5;flex:1 1 60px;font-size:.78rem}
+  .live-word{display:none}
+}
+@media (display-mode: standalone){
+  /* Installed on the home screen there is no browser chrome to scroll past. */
+  .wrap{padding-top:calc(18px + env(safe-area-inset-top))}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <h1>Break Ledger</h1>
+    <div class="mast-meta"><span id="todayDate"></span><span class="sep"></span><span id="dayNum"></span></div>
+  </header>
+  <p class="tagline" id="tagline"></p>
+
+  <div class="names" id="names">
+    <p class="eyebrow">Who&rsquo;s tracking</p>
+    <div class="namefield p1"><span class="dot"></span>
+      <input id="n1" data-name="a" maxlength="18" spellcheck="false" autocomplete="off" aria-label="First person&rsquo;s name"></div>
+    <div class="namefield p2"><span class="dot"></span>
+      <input id="n2" data-name="b" maxlength="18" spellcheck="false" autocomplete="off" aria-label="Second person&rsquo;s name"></div>
+    <span class="sync" id="sync"></span>
+  </div>
+
+  <div id="installHint" hidden></div>
+
+  <section class="section">
+    <p class="eyebrow">Today</p>
+    <div class="today">
+      <div class="cards" id="timers"></div>
+      <div id="timeline"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <p class="eyebrow">The balance</p>
+    <div class="tabs" id="tabs" role="group" aria-label="Time period">
+      <button data-period="today" type="button">Today</button>
+      <button data-period="week" type="button">This week</button>
+      <button data-period="month" type="button">This month</button>
+      <button data-period="all" type="button">All time</button>
+    </div>
+    <div class="panel balance" id="balance"></div>
+  </section>
+
+  <section class="section" id="secChart" hidden>
+    <p class="eyebrow">Day by day</p>
+    <div class="panel chart" id="chart"></div>
+  </section>
+
+  <section class="section">
+    <p class="eyebrow">Log a break you forgot to time</p>
+    <div class="panel">
+      <form class="form" id="addForm">
+        <div class="field">
+          <label>Who</label>
+          <div class="who" id="addWho" role="group" aria-label="Who took the break">
+            <button type="button" data-who="a"><span class="dot p1"></span><span data-nm="a"></span></button>
+            <button type="button" data-who="b"><span class="dot p2"></span><span data-nm="b"></span></button>
+          </div>
+        </div>
+        <div class="field"><label for="aDate">Date</label><input id="aDate" type="date" required></div>
+        <div class="field"><label for="aTime">Started</label><input id="aTime" type="time" required></div>
+        <div class="field"><label for="aMins">Minutes</label><input id="aMins" type="number" min="1" max="1440" step="1" value="30" required></div>
+        <div class="field grow"><label for="aNote">Note (optional)</label><input id="aNote" maxlength="60" placeholder="walk, gym, nap&hellip;" autocomplete="off"></div>
+        <button class="btn" type="submit">Add break</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section" id="secLog" hidden>
+    <p class="eyebrow">Log</p>
+    <div class="panel" id="log"></div>
+  </section>
+
+  <details class="backup">
+    <summary>Backup &amp; restore</summary>
+    <div class="backup-body">
+      <p>Copy the text below somewhere safe to keep a snapshot of every break, or paste an older one back in to restore it. Worth doing before you clear browser data, or when moving to a new phone.</p>
+      <textarea id="blob" spellcheck="false" aria-label="Backup data"></textarea>
+      <div class="rowbtns">
+        <button class="btn btn-sm" id="bCopy" type="button">Copy backup</button>
+        <button class="btn btn-sm" id="bRestore" type="button">Restore from pasted text</button>
+        <button class="btn btn-sm btn-quiet" id="bReset" type="button">Erase everything</button>
+      </div>
+      <p class="say" id="bSay"></p>
+    </div>
+  </details>
+
+  <footer class="foot"><span id="footNote"></span></footer>
+</div>
+<div id="tip" role="status" aria-live="polite"></div>
+<script>
+(function () {
+  "use strict";
+
+  /* ============================================================
+     Storage sits behind one adapter with two backends:
+       cloud — the artifact's shared store, so both phones see one ledger
+       local — this browser only, for the page opened as a file or hosted
+     Everything below the adapter is written once and works on either.
+     ============================================================ */
+  var KEY = "breakLedger.v2";
+  var DEFAULT_NAMES = { a: "Yash", b: "Kratika" };
+  var mode = "local", db = null, months = {}, ready = true, syncErr = "";
+  var state = blank();
+
+  function blank() {
+    return { names: { a: DEFAULT_NAMES.a, b: DEFAULT_NAMES.b }, entries: [], running: { a: null, b: null } };
+  }
+  function num(v) { return typeof v === "number" && isFinite(v) && v > 0 ? v : null; }
+  function valid(e) {
+    return e && (e.p === "a" || e.p === "b") && typeof e.start === "number" &&
+           isFinite(e.start) && typeof e.secs === "number" && e.secs > 0;
+  }
+  function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  /* ---------------- local backend ---------------- */
+  function loadLocal() {
+    var s = blank();
+    try {
+      var raw = window.localStorage.getItem(KEY);
+      if (raw) {
+        var p = JSON.parse(raw);
+        if (p && typeof p === "object") {
+          if (p.names && p.names.a && p.names.b) s.names = { a: String(p.names.a), b: String(p.names.b) };
+          if (Array.isArray(p.entries)) s.entries = p.entries.filter(valid);
+          if (p.running) s.running = { a: num(p.running.a), b: num(p.running.b) };
+        }
+      }
+    } catch (e) { /* private mode or blocked storage — run from memory */ }
+    return s;
+  }
+  function saveLocal() { try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  /* ---------------- cloud backend ---------------- */
+  /* One document per person per month: the document count stays tiny over
+     years, and since neither person writes the other's document, two phones
+     logging at the same moment cannot overwrite each other. */
+  function monthKey(p, startMs) {
+    var d = new Date(startMs);
+    return p + "-" + d.getFullYear() + "-" + pad(d.getMonth() + 1);
+  }
+  function rebuild() {
+    var all = [];
+    Object.keys(months).forEach(function (k) { all = all.concat(months[k]); });
+    state.entries = all;
+  }
+  function writeMonth(k) {
+    if (mode !== "cloud" || !db) return;
+    var list = months[k] || [];
+    var ref = db.doc("logs/" + k);
+    (list.length ? ref.set({ p: k.charAt(0), month: k.slice(2), entries: list }) : ref.delete()).catch(onSyncErr);
+  }
+  function writeConfig(name) {
+    if (mode !== "cloud" || !db) return;
+    var body = name === "people" ? { a: state.names.a, b: state.names.b }
+                                 : { a: state.running.a, b: state.running.b };
+    db.doc("config/" + name).set(body).catch(onSyncErr);
+  }
+  function onSyncErr(e) {
+    var code = (e && e.code) || "unavailable";
+    syncErr = code === "quota_exceeded" ? "The shared ledger is full — delete some old breaks."
+            : code === "resource_exhausted" ? "Too many changes at once — give it a moment."
+            : (code === "revoked" || code === "not_granted") ? "Sync stopped — reopen the shared link."
+            : "Sync hiccup — reload to reconnect.";
+    renderSync();
+  }
+  function goCloud(d) {
+    db = d; mode = "cloud"; ready = false; state = blank();
+    renderAll();
+    db.doc("config/people").onSnapshot(function (snap) {
+      var v = snap.exists ? snap.data() : null;
+      if (v && v.a && v.b) state.names = { a: String(v.a), b: String(v.b) };
+      renderAll();
+    }, onSyncErr);
+    db.doc("config/running").onSnapshot(function (snap) {
+      var v = snap.exists ? snap.data() : null;
+      state.running = v ? { a: num(v.a), b: num(v.b) } : { a: null, b: null };
+      renderAll();
+    }, onSyncErr);
+    db.collection("logs").onSnapshot(function (snap) {
+      months = {};
+      snap.docs.forEach(function (doc) {
+        var v = doc.data() || {};
+        if (Array.isArray(v.entries)) months[doc.id] = v.entries.filter(valid);
+      });
+      rebuild(); ready = true; syncErr = ""; renderAll();
+    }, onSyncErr);
+  }
+
+  /* ---------------- mutations (backend-agnostic) ---------------- */
+  function addEntry(e) {
+    if (mode === "cloud") {
+      var k = monthKey(e.p, e.start);
+      months[k] = (months[k] || []).concat([e]);
+      rebuild(); renderAll(); writeMonth(k);
+    } else { state.entries.push(e); saveLocal(); renderAll(); }
+  }
+  function dropEntries(match) {
+    if (mode === "cloud") {
+      var touched = [];
+      Object.keys(months).forEach(function (k) {
+        var before = months[k].length;
+        months[k] = months[k].filter(function (x) { return !match(x); });
+        if (months[k].length !== before) touched.push(k);
+      });
+      rebuild(); renderAll(); touched.forEach(writeMonth);
+    } else {
+      state.entries = state.entries.filter(function (x) { return !match(x); });
+      saveLocal(); renderAll();
+    }
+  }
+  function saveEntry(id, next) {
+    if (mode === "cloud") {
+      var touched = {};
+      Object.keys(months).forEach(function (k) {
+        var before = months[k].length;
+        months[k] = months[k].filter(function (x) { return x.id !== id; });
+        if (months[k].length !== before) touched[k] = 1;
+      });
+      var nk = monthKey(next.p, next.start);
+      months[nk] = (months[nk] || []).concat([{ id: id, p: next.p, start: next.start, secs: next.secs, note: next.note }]);
+      touched[nk] = 1;
+      rebuild(); renderAll(); Object.keys(touched).forEach(writeMonth);
+    } else {
+      state.entries.forEach(function (e) {
+        if (e.id !== id) return;
+        e.p = next.p; e.start = next.start; e.secs = next.secs; e.note = next.note;
+      });
+      saveLocal(); renderAll();
+    }
+  }
+  function setRunning(p, v) {
+    state.running[p] = v;
+    if (mode === "cloud") writeConfig("running"); else saveLocal();
+    renderAll();
+  }
+  function setPersonName(p, v) {
+    state.names[p] = v;
+    if (mode === "cloud") writeConfig("people"); else saveLocal();
+    renderAll();
+  }
+  function replaceAll(next) {
+    if (mode === "cloud") {
+      var seen = {}, fresh = {};
+      Object.keys(months).forEach(function (k) { seen[k] = 1; });
+      next.entries.forEach(function (e) {
+        var k = monthKey(e.p, e.start);
+        (fresh[k] = fresh[k] || []).push(e); seen[k] = 1;
+      });
+      months = fresh; state.names = next.names;
+      rebuild(); renderAll();
+      Object.keys(seen).forEach(writeMonth);
+      writeConfig("people");
+    } else {
+      state = { names: next.names, entries: next.entries, running: next.running };
+      saveLocal(); renderAll();
+    }
+  }
+
+  /* ============================ time helpers ============================ */
+  var DAY = 86400000, HOUR = 3600000;
+  function startOfDay(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  function startOfWeek(t) { var d = new Date(startOfDay(t)); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
+  function startOfMonth(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(1); return d.getTime(); }
+  function dayKey(t) { var d = new Date(t); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+  function dur(secs) {
+    var m = Math.round(secs / 60);
+    if (secs > 0 && m === 0) return "<1m";
+    var h = Math.floor(m / 60); m -= h * 60;
+    if (!h) return m + "m";
+    return m ? h + "h " + m + "m" : h + "h";
+  }
+  function clock(secs) {
+    var s = Math.max(0, Math.floor(secs));
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return (h ? h + ":" + pad(m) : m) + ":" + pad(ss);
+  }
+  function timeOfDay(t) { return new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+  function hourLabel(t) {
+    var h = new Date(t).getHours();
+    var ap = h < 12 ? "a" : "p", n = h % 12 === 0 ? 12 : h % 12;
+    return n + ap;
+  }
+  function dayLabel(t) {
+    var today = startOfDay(Date.now()), d = startOfDay(t);
+    if (d === today) return "Today";
+    if (d === today - DAY) return "Yesterday";
+    return new Date(t).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+  }
+
+  /* ============================ queries ============================ */
+  var period = "week";
+  var PERIOD_LABEL = { today: "today", week: "this week", month: "this month", all: "all time" };
+  function periodStart() {
+    var now = Date.now();
+    return period === "today" ? startOfDay(now)
+         : period === "week" ? startOfWeek(now)
+         : period === "month" ? startOfMonth(now) : 0;
+  }
+  function liveSecs(p, from) {
+    var r = state.running[p];
+    if (!r) return 0;
+    if (from && r < from) return 0;
+    return Math.max(0, (Date.now() - r) / 1000);
+  }
+  function totalFor(p, from, to) {
+    var t = 0;
+    for (var i = 0; i < state.entries.length; i++) {
+      var e = state.entries[i];
+      if (e.p !== p) continue;
+      if (from && e.start < from) continue;
+      if (to && e.start >= to) continue;
+      t += e.secs;
+    }
+    return t;
+  }
+  function totalWithLive(p, from, to) { return totalFor(p, from, to) + (to ? 0 : liveSecs(p, from)); }
+  function nameOf(p) { return state.names[p] || DEFAULT_NAMES[p]; }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function dayNumber() {
+    if (!state.entries.length) return 1;
+    var first = state.entries.reduce(function (m, e) { return Math.min(m, e.start); }, Infinity);
+    return Math.round((startOfDay(Date.now()) - startOfDay(first)) / DAY) + 1;
+  }
+  function distinctDays() {
+    var seen = {}, n = 0;
+    state.entries.forEach(function (e) { var k = dayKey(e.start); if (!seen[k]) { seen[k] = 1; n++; } });
+    return n;
+  }
+
+  /* ============================ copy ============================ */
+  var COPY = {
+    local: {
+      tagline: "Start a timer when either of you steps away. The day fills in as it goes, and the balance keeps score.",
+      foot: "Breaks are kept by this browser on this device, so stay on the same phone or tablet and the same browser. " +
+            "Weeks start on Monday. Running timers survive a refresh and a screen lock — they keep counting from the moment start was pressed. " +
+            "Use Backup &amp; restore before you clear browser data, or to carry the ledger to a new device."
+    },
+    cloud: {
+      tagline: "Start a timer when either of you steps away — the other phone sees it live. The day fills in as it goes, and the balance keeps score.",
+      foot: "Both of you read and write the same ledger, so a break logged on one phone shows up on the other within seconds. " +
+            "Weeks start on Monday. Running timers survive a refresh and a phone lock — they keep counting from the moment start was pressed."
+    }
+  };
+
+  /* ============================ render ============================ */
+  function renderHead() {
+    document.getElementById("todayDate").innerHTML =
+      esc(new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" }));
+    document.getElementById("dayNum").innerHTML = "Day <b>" + dayNumber() + "</b>";
+    var c = COPY[mode === "cloud" ? "cloud" : "local"];
+    document.getElementById("tagline").innerHTML = c.tagline;
+    document.getElementById("footNote").innerHTML = c.foot;
+  }
+  function renderSync() {
+    var el = document.getElementById("sync");
+    var m = syncErr ? "stalled" : (!ready ? "loading" : mode);
+    el.setAttribute("data-mode", m);
+    el.innerHTML = '<span class="dot"></span>' + esc(
+      syncErr ? syncErr : !ready ? "Opening the shared ledger…"
+      : mode === "cloud" ? "Shared · you both see this" : "This device only");
+  }
+  function renderNames() {
+    var n1 = document.getElementById("n1"), n2 = document.getElementById("n2");
+    if (document.activeElement !== n1) n1.value = nameOf("a");
+    if (document.activeElement !== n2) n2.value = nameOf("b");
+    document.querySelectorAll("[data-nm]").forEach(function (n) { n.textContent = nameOf(n.getAttribute("data-nm")); });
+  }
+  function renderTabs() {
+    document.querySelectorAll("#tabs button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-period") === period));
+    });
+  }
+
+  /* ---- the dial: one hour is a full sweep, 12 ticks of five minutes ---- */
+  var R = 52, CIRC = 2 * Math.PI * R;
+  function dialSvg(frac) {
+    var ticks = "";
+    for (var i = 0; i < 12; i++) {
+      var a = i * 30 * Math.PI / 180;
+      ticks += '<line x1="' + (60 + Math.sin(a) * 43.5).toFixed(1) + '" y1="' + (60 - Math.cos(a) * 43.5).toFixed(1) +
+               '" x2="' + (60 + Math.sin(a) * 47).toFixed(1) + '" y2="' + (60 - Math.cos(a) * 47).toFixed(1) + '"/>';
+    }
+    return '<svg class="dial" viewBox="0 0 120 120" aria-hidden="true">' +
+      '<circle class="dial-track" cx="60" cy="60" r="' + R + '"/>' +
+      '<g class="dial-ticks">' + ticks + "</g>" +
+      '<circle class="dial-arc" cx="60" cy="60" r="' + R + '" stroke-dasharray="' + CIRC.toFixed(1) +
+        '" stroke-dashoffset="' + (CIRC * (1 - Math.min(1, frac))).toFixed(1) + '"/></svg>';
+  }
+  function renderTimers() {
+    var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
+    document.getElementById("timers").innerHTML = ["a", "b"].map(function (p) {
+      var running = !!state.running[p];
+      var today = totalWithLive(p, todayStart), week = totalWithLive(p, weekStart);
+      var shown = running ? liveSecs(p) : today;
+      var s = '<div class="card ' + (p === "a" ? "p1" : "p2") + '" data-running="' + running + '">';
+      s += '<div class="card-top"><span class="card-name"><span class="dot"></span>' + esc(nameOf(p)) + "</span>" +
+           (running ? '<span class="live-tag"><span class="pulse"></span><span class="live-word">on a break</span></span>' : "") + "</div>";
+      s += '<div class="dial-wrap" data-dial="' + p + '">' + dialSvg(shown / 3600) +
+           '<span class="dial-val"><span class="dial-num" data-live="' + p + '">' +
+           (running ? clock(shown) : dur(today)) + '</span>' +
+           '<span class="dial-cap">' + (running ? "on a break" : "today") + "</span></span></div>";
+      s += running
+        ? '<button class="btn btn-stop" type="button" data-stop="' + p + '">Stop &amp; log it</button>'
+        : '<button class="btn btn-go" type="button" data-start="' + p + '">Start a break</button>';
+      s += '<div class="card-foot"><span>Today <b data-today="' + p + '">' + dur(today) + "</b></span>" +
+           '<span>This week <b data-week="' + p + '">' + dur(week) + "</b></span></div>";
+      return s + "</div>";
+    }).join("");
+  }
+
+  /* ---- today's timeline: when the breaks actually fell ---- */
+  function renderTimeline() {
+    var dayStart = startOfDay(Date.now()), now = Date.now();
+    var todays = state.entries.filter(function (e) { return e.start >= dayStart; });
+    var lo = dayStart + 7 * HOUR, hi = dayStart + 21 * HOUR;
+    todays.forEach(function (e) { lo = Math.min(lo, e.start); hi = Math.max(hi, e.start + e.secs * 1000); });
+    ["a", "b"].forEach(function (p) { if (state.running[p]) lo = Math.min(lo, state.running[p]); });
+    lo = Math.min(lo, now); hi = Math.max(hi, now);
+    var from = Math.floor(lo / HOUR) * HOUR, to = Math.ceil(hi / HOUR) * HOUR;
+    if (to - from < 6 * HOUR) to = from + 6 * HOUR;
+    var span = to - from;
+    function pct(t) { return ((t - from) / span) * 100; }
+
+    var hours = Math.round(span / HOUR);
+    var every = hours > 14 ? 3 : hours > 8 ? 2 : 1;
+    var grid = "", axis = "";
+    for (var h = 0; h <= hours; h++) {
+      var t = from + h * HOUR, x = pct(t);
+      grid += '<span class="tl-grid" style="left:' + x.toFixed(2) + '%"></span>';
+      if (h % every === 0 && h < hours) axis += '<span class="tl-hour" style="left:' + x.toFixed(2) + '%">' + hourLabel(t) + "</span>";
+    }
+    var nowMark = '<span class="tl-now" style="left:' + pct(now).toFixed(2) + '%"></span>';
+
+    function lane(p) {
+      var blocks = todays.filter(function (e) { return e.p === p; }).map(function (e) {
+        return block(e.start, e.start + e.secs * 1000, p, dur(e.secs) + (e.note ? " · " + e.note : ""), false);
+      }).join("");
+      if (state.running[p]) blocks += block(state.running[p], now, p, "running · " + dur(liveSecs(p)), true);
+      var empty = blocks ? "" : '<span class="tl-none">nothing yet</span>';
+      return '<div class="tl-row"><span class="tl-name ' + (p === "a" ? "p1" : "p2") + '"><span class="dot"></span>' +
+        esc(nameOf(p)) + '</span><div class="tl-track tl-lane ' + (p === "a" ? "p1" : "p2") + '">' +
+        grid + empty + blocks + nowMark + "</div></div>";
+    }
+    function block(s, e, p, tipTail, live) {
+      var l = Math.max(0, pct(s)), w = Math.max(0.6, pct(e) - pct(s));
+      return '<button class="tlb" type="button" data-live="' + (live ? 1 : 0) + '" style="left:' + l.toFixed(2) +
+        "%;width:" + Math.min(w, 100 - l).toFixed(2) + '%" data-tip="' +
+        esc(nameOf(p) + " · " + timeOfDay(s) + " · " + tipTail) + '" aria-label="' +
+        esc(nameOf(p) + " break at " + timeOfDay(s) + ", " + tipTail) + '"></button>';
+    }
+
+    document.getElementById("timeline").innerHTML =
+      '<div class="tl"><div class="tl-cap"><p class="eyebrow">The day so far</p>' +
+      '<span class="tl-range">' + hourLabel(from) + " – " + hourLabel(to === from + 24 * HOUR ? to - HOUR : to) + "</span></div>" +
+      '<div class="tl-row"><span class="tl-name"></span><div class="tl-track tl-axis">' + axis + "</div></div>" +
+      lane("a") + lane("b") + "</div>";
+  }
+
+  /* Only the live figures tick — re-rendering every second would fight the forms. */
+  function tick() {
+    if (!state.running.a && !state.running.b) return;
+    var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
+    ["a", "b"].forEach(function (p) {
+      var running = !!state.running[p];
+      var shown = running ? liveSecs(p) : totalWithLive(p, todayStart);
+      var live = document.querySelector('[data-live="' + p + '"]');
+      if (live && running) live.textContent = clock(shown);
+      var arc = document.querySelector('[data-dial="' + p + '"] .dial-arc');
+      if (arc) arc.setAttribute("stroke-dashoffset", (CIRC * (1 - Math.min(1, shown / 3600))).toFixed(1));
+      var t = document.querySelector('[data-today="' + p + '"]');
+      if (t) t.textContent = dur(totalWithLive(p, todayStart));
+      var w = document.querySelector('[data-week="' + p + '"]');
+      if (w) w.textContent = dur(totalWithLive(p, weekStart));
+    });
+    renderTimeline(); renderBalance();
+  }
+
+  /* ---- balance ---- */
+  function renderBalance() {
+    var el = document.getElementById("balance");
+    if (!ready) { el.innerHTML = '<p class="loading">Fetching the breaks you have both logged…</p>'; return; }
+    var from = periodStart();
+    var a = totalWithLive("a", from), b = totalWithLive("b", from);
+    var total = a + b, diff = Math.abs(a - b), lead = a === b ? null : (a > b ? "a" : "b");
+    var label = PERIOD_LABEL[period], html = "";
+
+    if (total === 0) {
+      html += '<p class="eyebrow">Ahead ' + esc(label) + "</p>" +
+        '<div class="hero"><span class="hero-name">Nothing logged yet</span></div>' +
+        '<div class="beam"><div class="beam-empty">no break time ' + esc(label) + "</div></div>" +
+        '<div class="fulcrum"></div>' +
+        '<p class="fulcrum-note">Press a timer above when either of you steps away, or add a break by hand below.</p>';
+      el.innerHTML = html;
+      return;
+    }
+    /* "Even" is deliberately generous — this is a marriage, not an audit. */
+    var share = diff / total;
+    var st = (diff <= 600 || share <= 0.12) ? "even" : (share <= 0.3 ? "off" : "lopsided");
+    var stText = st === "even" ? "Pretty even" : st === "off" ? "A little uneven" : "Lopsided";
+
+    html += '<p class="eyebrow">Ahead ' + esc(label) + '</p><div class="hero">';
+    if (!lead) html += '<span class="hero-name">Dead even</span>';
+    else {
+      var v = lead === "a" ? "1" : "2";
+      html += '<span class="hero-dot" style="--c:var(--p' + v + ')"></span>' +
+              '<span class="hero-name">' + esc(nameOf(lead)) + "</span>" +
+              '<span class="hero-gap" style="--c:var(--p' + v + ')">+' + dur(diff) + "</span>";
+    }
+    html += '<span class="chip" data-state="' + st + '">' + stText + "</span></div>";
+
+    var pa = (a / total) * 100;
+    html += '<div class="beam" role="img" aria-label="' + esc(nameOf("a")) + " " + dur(a) + ", " +
+      esc(nameOf("b")) + " " + dur(b) + " " + esc(label) + '">' +
+      '<div class="beam-fill p1" style="width:' + pa.toFixed(2) + '%"></div>' +
+      '<div class="beam-fill p2" style="width:' + (100 - pa).toFixed(2) + '%"></div>' +
+      '<span class="beam-tick" style="left:25%"></span><span class="beam-tick" style="left:75%"></span>' +
+      '<div class="beam-mid"></div></div><div class="fulcrum"></div>';
+    html += '<div class="legend">' +
+      '<span class="legend-item"><span class="dot p1"></span>' + esc(nameOf("a")) + ' <b>' + dur(a) +
+        '</b> <span class="pct">' + Math.round(pa) + "%</span></span>" +
+      '<span class="legend-item"><span class="pct">' + Math.round(100 - pa) + '%</span> <b>' + dur(b) +
+        "</b> " + esc(nameOf("b")) + '<span class="dot p2"></span></span></div>';
+    html += '<p class="fulcrum-note">The centre line is an even split — ' + dur(total / 2) + " each of " + dur(total) + " total.</p>";
+    el.innerHTML = html;
+  }
+
+  /* ---- diverging day chart ---- */
+  function chartDays() {
+    if (!state.entries.length) return 7;
+    var first = state.entries.reduce(function (m, e) { return Math.min(m, e.start); }, Infinity);
+    return Math.max(7, Math.min(14, Math.round((startOfDay(Date.now()) - startOfDay(first)) / DAY) + 1));
+  }
+  function renderChart() {
+    var el = document.getElementById("chart");
+    if (!ready) { el.innerHTML = '<p class="loading">Loading the last two weeks…</p>'; return; }
+    var DAYS = chartDays();
+    var today = startOfDay(Date.now()), rows = [], max = 0;
+    for (var i = DAYS - 1; i >= 0; i--) {
+      var from = today - i * DAY, to = from + DAY;
+      var a = totalFor("a", from, to) + (i === 0 ? liveSecs("a") : 0);
+      var b = totalFor("b", from, to) + (i === 0 ? liveSecs("b") : 0);
+      max = Math.max(max, a, b);
+      rows.push({ from: from, a: a, b: b, isToday: i === 0 });
+    }
+    if (max === 0) { el.innerHTML = '<p class="empty">No breaks in the last ' + DAYS + " days.</p>"; return; }
+
+    var html = '<div class="chart-head"><span class="legend-item"><span class="dot p1"></span>' + esc(nameOf("a")) +
+      '</span><span class="legend-item">' + esc(nameOf("b")) + '<span class="dot p2"></span></span></div><div class="rows">';
+    rows.forEach(function (r) {
+      var d = new Date(r.from);
+      var lab = r.isToday ? "today" : d.toLocaleDateString([], { weekday: "short" }).toLowerCase() + " " + d.getDate();
+      html += '<div class="track left">' + bar(r, "a", max) + '</div><div class="daylab' +
+        (r.isToday ? " is-today" : "") + '">' + esc(lab) + '</div><div class="track right">' + bar(r, "b", max) + "</div>";
+    });
+    html += "</div>";
+    var pk = new Date(rows.reduce(function (best, r) {
+      return Math.max(r.a, r.b) > Math.max(best.a, best.b) ? r : best;
+    }, rows[0]).from);
+    html += '<p class="chart-foot">Each row is one day, ' + esc(nameOf("a")) + " left of the centre and " +
+      esc(nameOf("b")) + " right. Full width either side = " + dur(max) + ", the busiest single day (" +
+      esc(pk.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })) + ").</p>";
+    el.innerHTML = html;
+  }
+  function bar(r, p, max) {
+    var v = r[p];
+    if (v <= 0) return "";
+    var d = new Date(r.from).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+    return '<button class="bar ' + (p === "a" ? "p1" : "p2") + '" type="button" style="width:' +
+      Math.max(2.5, (v / max) * 100).toFixed(2) + '%" data-tip="' + esc(nameOf(p) + " · " + dur(v) + " · " + d) +
+      '" aria-label="' + esc(nameOf(p) + ", " + dur(v) + " on " + d) + '"></button>';
+  }
+
+  /* ---- log ---- */
+  var editing = null;
+  function renderLog() {
+    var el = document.getElementById("log");
+    if (!ready) { el.innerHTML = '<p class="loading">Loading the log…</p>'; return; }
+    var list = state.entries.slice().sort(function (x, y) { return y.start - x.start; });
+    if (!list.length) { el.innerHTML = '<p class="empty">No breaks logged yet.</p>'; return; }
+    var groups = [], byDay = {};
+    list.forEach(function (e) {
+      var k = dayKey(e.start);
+      if (!byDay[k]) { byDay[k] = { at: e.start, items: [] }; groups.push(byDay[k]); }
+      byDay[k].items.push(e);
+    });
+    el.innerHTML = groups.slice(0, 40).map(function (g) {
+      var ta = 0, tb = 0;
+      g.items.forEach(function (e) { if (e.p === "a") ta += e.secs; else tb += e.secs; });
+      return '<div class="daygroup"><div class="dayhead"><span class="d">' + esc(dayLabel(g.at)) + "</span>" +
+        '<span class="t"><span><span class="dot p1"></span>' + dur(ta) + "</span>" +
+        '<span><span class="dot p2"></span>' + dur(tb) + "</span></span></div>" +
+        g.items.map(function (e) { return editing === e.id ? editRow(e) : entryRow(e); }).join("") + "</div>";
+    }).join("");
+  }
+  function entryRow(e) {
+    return '<div class="entry"><span class="when">' + esc(timeOfDay(e.start)) + "&ndash;" +
+      esc(timeOfDay(e.start + e.secs * 1000)) + '</span><span class="who-tag ' + (e.p === "a" ? "p1" : "p2") +
+      '"><span class="dot"></span><span>' + esc(nameOf(e.p)) + '</span></span><span class="dur">' + dur(e.secs) +
+      '</span><span class="note">' + esc(e.note || "") + '</span><span class="acts">' +
+      '<button class="btn btn-sm btn-quiet" type="button" data-edit="' + esc(e.id) + '">Edit</button>' +
+      '<button class="btn btn-sm btn-quiet" type="button" data-del="' + esc(e.id) + '">Delete</button></span></div>';
+  }
+  function editRow(e) {
+    var d = new Date(e.start);
+    return '<div class="editrow"><div class="field"><label for="eWho">Who</label><select id="eWho">' +
+      '<option value="a"' + (e.p === "a" ? " selected" : "") + ">" + esc(nameOf("a")) + "</option>" +
+      '<option value="b"' + (e.p === "b" ? " selected" : "") + ">" + esc(nameOf("b")) + "</option></select></div>" +
+      '<div class="field"><label for="eDate">Date</label><input id="eDate" type="date" value="' +
+        d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + '"></div>' +
+      '<div class="field"><label for="eTime">Started</label><input id="eTime" type="time" value="' +
+        pad(d.getHours()) + ":" + pad(d.getMinutes()) + '"></div>' +
+      '<div class="field"><label for="eMins">Minutes</label><input id="eMins" type="number" min="1" max="1440" value="' +
+        Math.max(1, Math.round(e.secs / 60)) + '"></div>' +
+      '<div class="field grow"><label for="eNote">Note</label><input id="eNote" maxlength="60" value="' + esc(e.note || "") + '"></div>' +
+      '<button class="btn btn-sm" type="button" data-save="' + esc(e.id) + '">Save</button>' +
+      '<button class="btn btn-sm btn-quiet" type="button" data-cancel="1">Cancel</button></div>';
+  }
+
+  /* The page grows into itself: history-only sections stay out of the way
+     until there is history worth showing. */
+  function renderAll() {
+    renderHead(); renderSync(); renderNames(); renderTabs();
+    renderTimers(); renderTimeline(); renderBalance();
+    document.getElementById("secChart").hidden = !(ready && distinctDays() >= 2);
+    document.getElementById("secLog").hidden = !(ready && state.entries.length > 0);
+    if (!document.getElementById("secChart").hidden) renderChart();
+    if (!document.getElementById("secLog").hidden) renderLog();
+    if (!document.querySelector("details.backup").open) document.getElementById("blob").value = snapshotJson();
+  }
+  function snapshotJson() {
+    return JSON.stringify({ names: state.names, entries: state.entries, running: state.running }, null, 2);
+  }
+
+  /* ============================ actions ============================ */
+  document.getElementById("timers").addEventListener("click", function (ev) {
+    var s = ev.target.closest("[data-start]"), t = ev.target.closest("[data-stop]");
+    if (s) { var p = s.getAttribute("data-start"); if (!state.running[p]) setRunning(p, Date.now()); }
+    if (t) {
+      var q = t.getAttribute("data-stop"), began = state.running[q];
+      if (!began) return;
+      var secs = Math.round((Date.now() - began) / 1000);
+      setRunning(q, null);
+      if (secs >= 5) addEntry({ id: newId(), p: q, start: began, secs: secs, note: "" });
+    }
+  });
+  document.getElementById("tabs").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-period]");
+    if (!b) return;
+    period = b.getAttribute("data-period");
+    renderTabs(); renderBalance();
+  });
+  document.getElementById("names").addEventListener("change", onName);
+  document.getElementById("names").addEventListener("blur", onName, true);
+  function onName(ev) {
+    var i = ev.target.closest("[data-name]");
+    if (!i) return;
+    var p = i.getAttribute("data-name"), v = i.value.trim().slice(0, 18);
+    if (!v || v === nameOf(p)) { i.value = nameOf(p); return; }
+    setPersonName(p, v);
+  }
+
+  var addWho = "a";
+  document.getElementById("addWho").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-who]");
+    if (!b) return;
+    addWho = b.getAttribute("data-who"); syncWho();
+  });
+  function syncWho() {
+    document.querySelectorAll("#addWho button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-who") === addWho));
+    });
+  }
+  document.getElementById("addForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var date = document.getElementById("aDate").value, time = document.getElementById("aTime").value;
+    var mins = parseInt(document.getElementById("aMins").value, 10);
+    if (!date || !time || !(mins > 0)) return;
+    var d = date.split("-"), hm = time.split(":");
+    addEntry({ id: newId(), p: addWho,
+      start: new Date(+d[0], +d[1] - 1, +d[2], +hm[0], +hm[1], 0, 0).getTime(),
+      secs: mins * 60, note: document.getElementById("aNote").value.trim().slice(0, 60) });
+    document.getElementById("aNote").value = "";
+  });
+
+  document.getElementById("log").addEventListener("click", function (ev) {
+    var ed = ev.target.closest("[data-edit]"), del = ev.target.closest("[data-del]");
+    var sv = ev.target.closest("[data-save]"), cx = ev.target.closest("[data-cancel]");
+    if (ed) { editing = ed.getAttribute("data-edit"); renderLog(); return; }
+    if (cx) { editing = null; renderLog(); return; }
+    if (del) { var id = del.getAttribute("data-del"); editing = null; dropEntries(function (e) { return e.id === id; }); return; }
+    if (sv) {
+      var eid = sv.getAttribute("data-save");
+      var dv = document.getElementById("eDate").value, tv = document.getElementById("eTime").value;
+      var mv = parseInt(document.getElementById("eMins").value, 10);
+      editing = null;
+      if (dv && tv && mv > 0) {
+        var pp = dv.split("-"), hh = tv.split(":");
+        saveEntry(eid, { p: document.getElementById("eWho").value === "b" ? "b" : "a",
+          start: new Date(+pp[0], +pp[1] - 1, +pp[2], +hh[0], +hh[1], 0, 0).getTime(),
+          secs: mv * 60, note: document.getElementById("eNote").value.trim().slice(0, 60) });
+      } else renderLog();
+    }
+  });
+
+  /* --- shared tooltip for every mark that carries one --- */
+  var tip = document.getElementById("tip");
+  function hideTip() { tip.setAttribute("data-show", "false"); }
+  function showTip(el) {
+    var txt = el.getAttribute("data-tip");
+    if (!txt) return;
+    var r = el.getBoundingClientRect();
+    tip.textContent = txt;
+    tip.style.left = Math.round(r.left + r.width / 2) + "px";
+    tip.style.top = Math.round(r.top) + "px";
+    tip.setAttribute("data-show", "true");
+  }
+  document.addEventListener("mouseover", function (ev) { var m = ev.target.closest("[data-tip]"); if (m) showTip(m); });
+  document.addEventListener("mouseout", function (ev) { if (ev.target.closest("[data-tip]")) hideTip(); });
+  document.addEventListener("focusin", function (ev) { var m = ev.target.closest("[data-tip]"); if (m) showTip(m); });
+  document.addEventListener("focusout", hideTip);
+  window.addEventListener("scroll", hideTip, { passive: true });
+
+  /* --- backup & restore --- */
+  var say = document.getElementById("bSay");
+  document.querySelector("details.backup").addEventListener("toggle", function () {
+    if (this.open) document.getElementById("blob").value = snapshotJson();
+  });
+  document.getElementById("bCopy").addEventListener("click", function () {
+    var ta = document.getElementById("blob");
+    ta.value = snapshotJson(); ta.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(
+        function () { say.textContent = "Backup copied to your clipboard."; },
+        function () { say.textContent = "Copy blocked here — the text is selected, press Ctrl/Cmd+C."; });
+    } else say.textContent = "The text is selected — press Ctrl/Cmd+C to copy it.";
+  });
+  document.getElementById("bRestore").addEventListener("click", function () {
+    var txt = document.getElementById("blob").value.trim();
+    if (!txt) { say.textContent = "Paste a backup into the box first."; return; }
+    var parsed;
+    try { parsed = JSON.parse(txt); }
+    catch (e) { say.textContent = "That is not readable backup text — paste the whole thing, braces included."; return; }
+    if (!parsed || !Array.isArray(parsed.entries)) { say.textContent = "That backup has no breaks in it. Nothing was changed."; return; }
+    if (mode === "cloud" && !window.confirm("Replace the shared ledger for both of you with this backup?")) return;
+    var entries = parsed.entries.filter(valid).map(function (e) {
+      return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "" };
+    });
+    replaceAll({
+      names: (parsed.names && parsed.names.a && parsed.names.b)
+        ? { a: String(parsed.names.a), b: String(parsed.names.b) } : state.names,
+      entries: entries,
+      running: parsed.running ? { a: num(parsed.running.a), b: num(parsed.running.b) } : { a: null, b: null }
+    });
+    say.textContent = "Restored " + entries.length + " breaks.";
+  });
+  document.getElementById("bReset").addEventListener("click", function () {
+    if (!window.confirm(mode === "cloud"
+      ? "Erase every break for both of you, on both phones? This cannot be undone."
+      : "Erase every break for both of you? This cannot be undone.")) return;
+    if (mode === "cloud") {
+      setRunning("a", null); setRunning("b", null);
+      dropEntries(function () { return true; });
+    } else { state = blank(); saveLocal(); renderAll(); }
+    say.textContent = "Everything erased. Fresh start.";
+  });
+
+  /* ============================ boot ============================ */
+  (function initForm() {
+    var now = new Date();
+    document.getElementById("aDate").value = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+    document.getElementById("aTime").value = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    syncWho();
+  })();
+
+  function startLocal() { mode = "local"; ready = true; state = loadLocal(); renderAll(); }
+
+  /* window.claude exists only inside the claude.ai viewer; a downloaded or
+     self-hosted copy has no capabilities and runs entirely on localStorage. */
+  var viewer = typeof window.claude !== "undefined" && window.claude && typeof window.claude.use === "function";
+  if (!viewer) startLocal();
+  else {
+    ready = false; state = blank(); renderAll();
+    window.claude.use("db").then(function (d) { if (d) goCloud(d); else startLocal(); }, startLocal);
+  }
+
+  setInterval(tick, 1000);
+  var bootDay = startOfDay(Date.now());
+  setInterval(function () {
+    if (startOfDay(Date.now()) !== bootDay) { bootDay = startOfDay(Date.now()); renderAll(); }
+  }, 60000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && !editing) renderAll(); });
+
+  /* ============================ installed-app plumbing ============================ */
+  var framed = window.top !== window.self;
+  var standalone = window.navigator.standalone === true ||
+                   (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+
+  /* Offline shell. Registration is scoped to this folder, so it never touches
+     anything else served from the same domain. */
+  if (!framed && "serviceWorker" in navigator &&
+      (location.protocol === "https:" || location.hostname === "localhost")) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () { /* offline support is optional */ });
+    });
+  }
+
+  /* Adding to the home screen is a Safari menu item, not something the page can
+     trigger, so the most a page can honestly do is say where the button is. */
+  (function installHint() {
+    var el = document.getElementById("installHint");
+    if (!el || framed || standalone) return;
+    var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!iOS) return;
+    try { if (window.localStorage.getItem("breakLedger.hint") === "off") return; } catch (e) {}
+    el.hidden = false;
+    el.innerHTML = '<div class="hint"><p><b>Put this on your home screen.</b> Tap the Share button below, ' +
+      'then <b>Add to Home Screen</b> — it opens full screen with its own icon, and works without signal.</p>' +
+      '<button class="btn btn-sm btn-quiet" type="button" id="hintOff">Got it</button></div>';
+    el.addEventListener("click", function (ev) {
+      if (!ev.target.closest("#hintOff")) return;
+      el.hidden = true;
+      try { window.localStorage.setItem("breakLedger.hint", "off"); } catch (e) {}
+    });
+  })();
+})();
+</script>
+</body>
+</html>

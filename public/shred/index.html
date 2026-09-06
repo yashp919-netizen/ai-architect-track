@@ -605,7 +605,7 @@ textarea#blob{
     if (l) l.media = "all";
   })();
 
-  var BUILD = "v2 · 6 Sep 2026";
+  var BUILD = "v3 · 6 Sep 2026";
   var KEY = "theShred.v1";
 
   /* ============================================================
@@ -735,91 +735,35 @@ textarea#blob{
   var FOOD = {
     build: {
       label: "Build", kcal: 2800, p: 170, f: 69, c: 375, steps: 8000,
-      days: {
-        1: [["Morning", "2 scoops whey, 75 g oats, 1 banana, 30 g peanut butter, 150 ml whole milk"],
-            ["Lunch", "300 g rice, 90 g chicken, dal, 2 tsp ghee, sabzi, salad"],
-            ["Afternoon", "200 g low-fat curd, 4 almonds, 10 g chia seeds"],
-            ["After training", "2 chapati, 40 g chicken"],
-            ["Dinner", "3 rotis, dal, vegetables"]],
-        2: [["Morning", "2 scoops whey, 30 g oats, 1 banana, 250 ml whole milk"],
-            ["Lunch", "320 g rice, 120 g chicken, dal, 2 tsp ghee, sabzi, salad"],
-            ["Afternoon", "225 g low-fat curd, 8 almonds"],
-            ["After training", "2 chapati, 1 banana"],
-            ["Dinner", "3 rotis, 70 g paneer, dal, vegetables"]],
-        3: [["Morning", "2 scoops whey, 45 g oats, 2 bananas, 35 g peanut butter"],
-            ["Lunch", "300 g rice, 120 g chicken, dal, 2 tsp ghee, sabzi, salad"],
-            ["Afternoon", "200 g low-fat curd, 8 almonds, 10 g chia seeds"],
-            ["After training", "150 g rice, 40 g chicken"],
-            ["Dinner", "3 rotis, dal, vegetables, salad"]],
-        4: [["Morning", "2 scoops whey, 50 g oats, 2 bananas, 200 ml whole milk"],
-            ["Lunch", "330 g rice, 100 g chicken, dal, 2 tsp ghee, sabzi, salad"],
-            ["Afternoon", "175 g curd, 8 almonds"],
-            ["After training", "130 g rice, 40 g chicken"],
-            ["Dinner", "3 rotis, 60 g paneer, dal, vegetables"]],
-        5: [["Morning", "2 scoops whey, 40 g oats, 2 bananas, 250 ml whole milk"],
-            ["Lunch", "280 g rice, 90 g paneer, dal, sabzi, salad"],
-            ["Afternoon", "175 g low-fat curd, 12 almonds, 15 g chia seeds"],
-            ["After training", "2 chapati, 30 g chicken"],
-            ["Dinner", "3 rotis, 70 g chicken, dal, vegetables"]],
-        6: [["Morning", "2 scoops whey, 30 g oats, 2 bananas, 30 g peanut butter, 100 ml whole milk"],
-            ["Lunch", "250 g rice, 110 g chicken, dal, 2 tsp ghee, sabzi, salad"],
-            ["Afternoon", "250 g low-fat curd, 150 g fruit, 12 almonds"],
-            ["Evening", "2 rotis, 40 g chicken"],
-            ["Dinner", "3 rotis, dal, vegetables"]],
-        0: [["Morning", "2 scoops whey, 30 g oats, 1 banana, 20 g peanut butter, 250 ml whole milk"],
-            ["Lunch", "320 g rice, 110 g chicken, dal, sabzi, salad"],
-            ["Afternoon", "225 g low-fat curd, 6 almonds, 10 g chia seeds"],
-            ["Evening", "2 rotis, 150 g fruit"],
-            ["Dinner", "3 rotis, 60 g paneer, dal, vegetables"]]
-      },
+      meals: [
+        ["Morning", "2 scoops whey, 40 g oats, 2 bananas, 30 g peanut butter, 250 ml whole milk"],
+        ["Lunch", "300 g rice, 200 g chicken, dal with a teaspoon of ghee, sabzi, salad"],
+        ["Afternoon", "200 g curd, 6 almonds, chia seeds"],
+        ["After training", "2 chapati, 100 g chicken"],
+        ["Dinner", "3 rotis, dal, 100 g paneer, vegetables"]
+      ],
       foot: "8,000 steps a day. No Zone 2 or HIIT during the build. If weight trends down unintentionally, increase food rather than adding cardio."
     },
     cut: {
       label: "Cut", kcal: 2200, p: 175, f: 67, c: 225, steps: 10000,
-      days: {
-        1: [["Morning", "2 scoops whey, 1 banana, 30 g oats"],
-            ["Lunch", "190 g rice, 130 g chicken, dal, sabzi, salad"],
-            ["Afternoon", "275 g low-fat curd, 12 almonds"],
-            ["After training", "1 chapati, 50 g chicken"],
-            ["Dinner", "140 g paneer, 1 roti, salad, vegetables"]],
-        2: [["Morning", "2 scoops whey, 1 banana, 35 g oats"],
-            ["Lunch", "200 g rice, 160 g chicken, dal, sabzi, salad"],
-            ["Afternoon", "250 g curd, 12 almonds"],
-            ["After training", "1 chapati, 60 g chicken"],
-            ["Dinner", "80 g paneer, 1 roti, salad, vegetables, 1 tsp ghee"]],
-        3: [["Morning", "2 scoops whey, 1 banana, 40 g oats"],
-            ["Lunch", "190 g rice, 110 g paneer, dal, sabzi, salad"],
-            ["Afternoon", "200 g low-fat curd, 8 almonds"],
-            ["After training", "1 chapati, 60 g chicken"],
-            ["Dinner", "140 g chicken, 1 roti, salad, vegetables, 2 tsp ghee"]],
-        4: [["Morning", "2 scoops whey, 1 banana, 30 g oats"],
-            ["Lunch", "200 g rice, 150 g chicken, dal, sabzi, salad"],
-            ["Afternoon", "200 g curd, 8 almonds, 10 g chia seeds"],
-            ["After training", "1 chapati, 70 g chicken"],
-            ["Dinner", "90 g paneer, 1 roti, salad, vegetables, 1 tsp ghee"]],
-        5: [["Morning", "2 scoops whey, 1 banana, 40 g oats"],
-            ["Lunch", "190 g rice, 150 g paneer, dal, sabzi, salad"],
-            ["Afternoon", "175 g low-fat curd, 12 almonds"],
-            ["After training", "1 chapati, 50 g chicken"],
-            ["Dinner", "130 g chicken, 1 roti, salad, vegetables"]],
-        0: [["Morning", "2 scoops whey, 1 banana, 30 g oats"],
-            ["Lunch", "140 g rice, 140 g chicken, dal, sabzi, salad"],
-            ["Afternoon", "300 g low-fat curd, 100 g fruit, 12 almonds"],
-            ["Evening", "1 roti, 50 g chicken"],
-            ["Dinner", "130 g paneer, 1 roti, salad, vegetables"]]
-      },
+      meals: [
+        ["Morning", "2 scoops whey, 1 banana, 30 g oats"],
+        ["Lunch", "200 g rice, 200 g chicken, dal, large sabzi, salad"],
+        ["Afternoon", "200 g curd, 6 almonds"],
+        ["After training", "1 chapati, 100 g chicken"],
+        ["Dinner", "150 g paneer or chicken, 1 roti, large salad, vegetables"]
+      ],
       foot: "Floor of 1,850 kcal a day — never go below it. Three 30-minute walks a week on top of the step target. Keep training loads as stable as possible."
     },
     refeed: {
       label: "Saturday refeed", kcal: 2600, p: 175, f: 51, c: 360, steps: 10000,
-      days: {
-        6: [["Morning", "2 scoops whey, 1 banana, 40 g oats, 20 g honey"],
-            ["Lunch", "280 g rice, 100 g chicken, dal, sabzi, 1 tsp ghee"],
-            ["Afternoon", "250 g curd, 200 g fruit, 40 g oats, 4 almonds"],
-            ["Evening", "3 rotis, dal, 120 g chicken, vegetables"],
-            ["Optional", "20 g honey"]]
-      },
-      extra: ["Optional", "One normal dessert. Keep fat controlled; keep the enjoyment."],
+      meals: [
+        ["Morning", "2 scoops whey, 2 bananas, 60 g oats, honey"],
+        ["Lunch", "300 g rice, 200 g chicken, dal, sabzi"],
+        ["Afternoon", "200 g curd with fruit, 40 g oats"],
+        ["Evening", "3 rotis, dal, 150 g chicken, vegetables"],
+        ["Optional", "One normal dessert. Keep fat controlled; keep the enjoyment."]
+      ],
       foot: "The high-carb Saturday sits before Monday’s push session. Expect a temporary scale rise from glycogen and water — use the seven-day average, not Monday morning alone."
     },
     travel: {
@@ -900,17 +844,6 @@ textarea#blob{
     if (isRefeed(k)) return FOOD.refeed;
     return phaseOf(k) === "cut" ? FOOD.cut : FOOD.build;
   }
-  /* The plan states one macro target per phase and one example day. These seven
-     rotations all hit that same target — same kcal, same protein, fat and carbs
-     every day — so the food varies without the numbers the adjustment rules act
-     on ever moving. Travel stays deliberately loose: the plan says eat local. */
-  function mealsFor(k) {
-    var f = foodOf(k);
-    if (!f.days) return f.meals;
-    var rows = f.days[dowOf(k)] || f.days[1];
-    return f.extra ? rows.concat([f.extra]) : rows;
-  }
-
   function sessionOf(k) {
     var d = DAYS[dowOf(k)];
     if (isTravel(k) && d.gym) {
@@ -1451,13 +1384,11 @@ textarea#blob{
       (f.c !== null ? '<div class="macro"><div class="mv">' + f.c + '</div><div class="mk">g carbs</div></div>' : '<div class="macro"><div class="mv">—</div><div class="mk">g carbs</div></div>') +
       "</div>";
 
-    var meals = '<dl class="meals">' + mealsFor(t).map(function (m) {
+    var meals = '<dl class="meals">' + f.meals.map(function (m) {
       return "<dt>" + esc(m[0]) + "</dt><dd>" + esc(m[1]) + "</dd>";
     }).join("") + "</dl>";
 
-    $("food").innerHTML = '<div class="hd"><h3>' + esc(f.label) +
-      (f.days ? " &middot; " + esc(DOW[dowOf(t)]) : "") +
-      '</h3><span class="grow">' + esc(why) + "</span></div>" +
+    $("food").innerHTML = '<div class="hd"><h3>' + esc(f.label) + '</h3><span class="grow">' + esc(why) + "</span></div>" +
       macros + meals + '<p class="lede" style="margin:13px 0 0">' + esc(f.foot) + "</p>";
   }
 
@@ -1826,24 +1757,9 @@ textarea#blob{
           ["Flat 10 days, logging tight", "Drop 100 kcal a day OR add 1,500 steps a day."],
           ["Flat 10 days, logging loose", "Fix the logging first; change nothing else."]
         ] : null;
-      var body;
-      if (f.days) {
-        var order = [1, 2, 3, 4, 5, 6, 0].filter(function (n) { return f.days[n]; });
-        body = order.map(function (n) {
-          var rows = f.days[n].concat(f.extra ? [f.extra] : []);
-          return '<details class="fold" style="box-shadow:none;margin-top:8px"><summary>' + esc(DOW[n]) + "</summary>" +
-            '<div class="fold-body"><dl class="meals">' +
-            rows.map(function (m) { return "<dt>" + esc(m[0]) + "</dt><dd>" + esc(m[1]) + "</dd>"; }).join("") +
-            "</dl></div></details>";
-        }).join("");
-      } else {
-        body = '<dl class="meals">' +
-          f.meals.map(function (m) { return "<dt>" + esc(m[0]) + "</dt><dd>" + esc(m[1]) + "</dd>"; }).join("") + "</dl>";
-      }
       return '<details class="fold"><summary>' + esc(f.label) + " <em>" + esc(when) + "</em></summary>" +
-        '<div class="fold-body"><p class="lede" style="margin:0 0 12px">' + esc(macro) +
-        (f.days ? " &mdash; every day of the rotation hits this." : "") + "</p>" +
-        body +
+        '<div class="fold-body"><p class="lede" style="margin:0 0 12px">' + esc(macro) + "</p>" +
+        '<dl class="meals">' + f.meals.map(function (m) { return "<dt>" + esc(m[0]) + "</dt><dd>" + esc(m[1]) + "</dd>"; }).join("") + "</dl>" +
         (adj ? '<p class="eyebrow" style="margin:16px 0 8px">Adjustment rules</p><dl class="kv">' +
           adj.map(function (a) { return "<dt>" + esc(a[0]) + "</dt><dd>" + esc(a[1]) + "</dd>"; }).join("") + "</dl>" : "") +
         '<p class="lede" style="margin:13px 0 0">' + esc(f.foot) + "</p></div></details>";

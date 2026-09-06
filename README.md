@@ -38,12 +38,6 @@ update button.
   on the week-on-week change in that average, never on one weigh-in, so the app
   computes it and reads back the plan's own adjustment rule for the phase you are
   in. It refuses to give a verdict on fewer than four readings in either week.
-- **The food is day-wise.** Seven build days, six cut days and the Saturday
-  refeed, each built only from the foods the plan names, and each hitting that
-  phase's exact target (2,800 / 170 / 69 / 375 in the build; 2,200 / 175 / 67 /
-  225 in the cut; 2,600 / 175 / 51 / 360 on a refeed). The foods rotate; the
-  numbers the adjustment rules act on never move. Travel stays deliberately
-  loose because the plan says to eat local food.
 - **Set logging** carries loads forward: once every set of a lift reaches the top
   of its rep range, the next session says to add weight and reset to the bottom.
 - **Storage:** everything lives in that browser's local storage. Use the Backup &
@@ -55,13 +49,11 @@ The plan's own numbers live in one `PLAN`/`DAYS`/`FOOD` block at the top of the
 script — set counts are checked against the exercise lists at boot, so a
 transcription slip shows up in the console rather than in a week of training.
 
-Note on the meal rotations: the plan's stated macro targets and its single
-example day do not reconcile — priced with standard portions, the example build
-day comes to roughly 3,390 kcal and 240 g protein against a stated 2,800 and
-170 g. The rotations follow the stated targets, since those are what the
-adjustment rules are written against. They were solved numerically rather than
-estimated; the working lives outside this repo, but every day lands within a few
-kcal and under 3 g on each macro.
+The meal blocks are reproduced verbatim from the plan document, by request. Note
+that the document's example days total more than its own stated macro targets —
+priced at standard cooked portions the build day comes to roughly 3,390 kcal and
+240 g protein against a stated 2,800 and 170 g. The app shows both as written
+rather than quietly reconciling them.
 
 ---
 

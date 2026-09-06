@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Break Ledger</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Break Ledger">
+<meta name="theme-color" content="#F4F3F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131218" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
@@ -329,7 +335,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   <header class="masthead">
     <h1 class="serif">Break Ledger</h1>
   </header>
-  <p class="tagline">One tally, both phones. Start a timer when you step away &mdash; the other person sees it live &mdash; and check at a glance whose break time is running ahead.</p>
+  <p class="tagline" id="tagline"></p>
 
   <div class="names" id="names">
     <p class="eyebrow">Who&rsquo;s tracking</p>
@@ -395,7 +401,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   <details class="backup">
     <summary>Backup &amp; restore</summary>
     <div class="backup-body">
-      <p>Copy the text below somewhere safe to keep a snapshot of every break, or paste an older one back in to restore it. Restoring replaces the shared ledger for both of you.</p>
+      <p>Copy the text below somewhere safe to keep a snapshot of every break, or paste an older one back in to restore it. Worth doing before you clear your browser data, or when moving to a new phone.</p>
       <textarea id="blob" spellcheck="false" aria-label="Backup data"></textarea>
       <div class="rowbtns">
         <button class="btn btn-sm" id="bCopy" type="button">Copy backup</button>
@@ -407,9 +413,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   </details>
 
   <footer class="foot">
-    Both of you read and write the same ledger, so a break logged on one phone shows up on the other within seconds.
-    Weeks start on Monday. Running timers survive a refresh and a phone lock &mdash; they keep counting from the moment start was pressed.
-    Opened as a downloaded file instead of the shared link, the page still works, but it keeps its breaks to that one device.
+<span id="footNote"></span>
   </footer>
 </div>
 <div id="tip" role="status" aria-live="polite"></div>
@@ -923,8 +927,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     var el = document.getElementById("demoNotice");
     if (!ready) { el.innerHTML = ""; return; }
     if (namesUnset()) {
-      el.innerHTML = '<div class="notice"><p><b>Put your names in</b> using the boxes above. You are both looking at ' +
-        'the same ledger, so a name typed on one phone shows up on the other.</p></div>';
+      el.innerHTML = '<div class="notice"><p>' + COPY[mode === "cloud" ? "cloud" : "local"].names + '</p></div>';
       return;
     }
     if (hasDemo()) {
@@ -946,8 +949,29 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
       b.setAttribute("aria-pressed", String(b.getAttribute("data-period") === period));
     });
   }
+  var COPY = {
+    local: {
+      tagline: "One tally for the two of you. Start a timer when either of you steps away, and see at a glance whose break time is running ahead.",
+      foot: "Breaks are kept by this browser on this device, so stay on the same phone or tablet and the same browser. " +
+            "Weeks start on Monday. Running timers survive a refresh and a screen lock \u2014 they keep counting from the moment start was pressed. " +
+            "Use Backup &amp; restore before you clear browser data, or to carry the ledger to a new device.",
+      names: "<b>Put your names in</b> using the boxes above, so the ledger reads the way the two of you actually talk."
+    },
+    cloud: {
+      tagline: "One tally, both phones. Start a timer when you step away \u2014 the other person sees it live \u2014 and check at a glance whose break time is running ahead.",
+      foot: "Both of you read and write the same ledger, so a break logged on one phone shows up on the other within seconds. " +
+            "Weeks start on Monday. Running timers survive a refresh and a phone lock \u2014 they keep counting from the moment start was pressed.",
+      names: "<b>Put your names in</b> using the boxes above. You are both looking at the same ledger, so a name typed on one phone shows up on the other."
+    }
+  };
+  function renderCopy() {
+    var c = COPY[mode === "cloud" ? "cloud" : "local"];
+    document.getElementById("tagline").innerHTML = c.tagline;
+    document.getElementById("footNote").innerHTML = c.foot;
+  }
+
   function renderAll() {
-    renderSync(); renderNames(); renderNotice(); renderTabs();
+    renderCopy(); renderSync(); renderNames(); renderNotice(); renderTabs();
     renderBalance(); renderTimers(); renderChart(); renderLog();
     if (!document.querySelector("details.backup").open) {
       document.getElementById("blob").value = snapshotJson();

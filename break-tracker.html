@@ -116,6 +116,15 @@ body{
 .p2{--c:var(--p2);--on:var(--on2)}
 
 /* ---------- generic panel ---------- */
+.sync{
+  display:inline-flex;align-items:center;gap:7px;margin-left:auto;
+  font-size:.72rem;font-weight:600;letter-spacing:.04em;color:var(--muted);white-space:nowrap;
+}
+.sync .dot{--c:var(--muted);width:7px;height:7px}
+.sync[data-mode="cloud"]{color:var(--ink-2)}
+.sync[data-mode="cloud"] .dot{--c:var(--p1);animation:pulse 2.4s ease-in-out infinite}
+.sync[data-mode="stalled"] .dot{--c:var(--p2)}
+.loading{color:var(--muted);font-size:.9rem;padding:8px 2px}
 .panel{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
   padding:18px;box-shadow:var(--shadow);
@@ -320,7 +329,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   <header class="masthead">
     <h1 class="serif">Break Ledger</h1>
   </header>
-  <p class="tagline">Two people, one running tally. Start a timer when you step away, and see at a glance whose break time is running ahead.</p>
+  <p class="tagline">One tally, both phones. Start a timer when you step away &mdash; the other person sees it live &mdash; and check at a glance whose break time is running ahead.</p>
 
   <div class="names" id="names">
     <p class="eyebrow">Who&rsquo;s tracking</p>
@@ -332,6 +341,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
       <span class="dot"></span>
       <input id="n2" data-name="b" maxlength="18" spellcheck="false" autocomplete="off" aria-label="Second person&rsquo;s name">
     </div>
+    <span class="sync" id="sync"></span>
   </div>
 
   <div id="demoNotice"></div>
@@ -385,7 +395,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   <details class="backup">
     <summary>Backup &amp; restore</summary>
     <div class="backup-body">
-      <p>Everything lives in this browser only &mdash; nothing is sent anywhere. Copy the text below somewhere safe to keep a backup, or paste an old backup in and restore it.</p>
+      <p>Copy the text below somewhere safe to keep a snapshot of every break, or paste an older one back in to restore it. Restoring replaces the shared ledger for both of you.</p>
       <textarea id="blob" spellcheck="false" aria-label="Backup data"></textarea>
       <div class="rowbtns">
         <button class="btn btn-sm" id="bCopy" type="button">Copy backup</button>
@@ -397,8 +407,9 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   </details>
 
   <footer class="foot">
-    Breaks are stored in this browser&rsquo;s local storage, so use the same device and browser to keep one shared ledger.
-    Weeks start on Monday. Running timers survive a refresh &mdash; they keep counting from the moment you pressed start.
+    Both of you read and write the same ledger, so a break logged on one phone shows up on the other within seconds.
+    Weeks start on Monday. Running timers survive a refresh and a phone lock &mdash; they keep counting from the moment start was pressed.
+    Opened as a downloaded file instead of the shared link, the page still works, but it keeps its breaks to that one device.
   </footer>
 </div>
 <div id="tip" role="status" aria-live="polite"></div>
@@ -407,14 +418,31 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
 (function () {
   "use strict";
 
-  /* ============================ storage ============================ */
+  /* ============================================================
+     Storage lives behind one small adapter with two backends:
+       cloud — the artifact's shared store, so both phones see one ledger
+       local — this browser only, for the page opened as a downloaded file
+     Everything below the adapter works the same either way.
+     ============================================================ */
   var KEY = "breakLedger.v1";
-  var state = load();
+  var mode = "local";          // "local" | "cloud"
+  var db = null;
+  var months = {};             // cloud only: "a-2026-09" -> [entry, ...]
+  var ready = true;            // false while the first shared snapshot is in flight
+  var syncErr = "";
+  var state = blank();
 
   function blank() {
-    return { names: { a: "You", b: "Your wife" }, entries: [], running: { a: null, b: null }, seeded: false };
+    return { names: { a: "Person A", b: "Person B" }, entries: [], running: { a: null, b: null }, seeded: false };
   }
-  function load() {
+  function num(v) { return typeof v === "number" && isFinite(v) && v > 0 ? v : null; }
+  function valid(e) {
+    return e && (e.p === "a" || e.p === "b") && typeof e.start === "number" &&
+           isFinite(e.start) && typeof e.secs === "number" && e.secs > 0;
+  }
+
+  /* ---------------- local backend ---------------- */
+  function loadLocal() {
     var s = blank();
     try {
       var raw = window.localStorage.getItem(KEY);
@@ -423,22 +451,152 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
         if (p && typeof p === "object") {
           if (p.names && p.names.a && p.names.b) s.names = { a: String(p.names.a), b: String(p.names.b) };
           if (Array.isArray(p.entries)) s.entries = p.entries.filter(valid);
-          if (p.running && typeof p.running === "object") {
-            s.running = { a: num(p.running.a), b: num(p.running.b) };
-          }
+          if (p.running) s.running = { a: num(p.running.a), b: num(p.running.b) };
           s.seeded = !!p.seeded;
         }
       }
-    } catch (e) { /* private mode, blocked storage — carry on in memory */ }
+    } catch (e) { /* private mode or blocked storage — run from memory */ }
     return s;
   }
-  function num(v) { return typeof v === "number" && isFinite(v) && v > 0 ? v : null; }
-  function valid(e) {
-    return e && (e.p === "a" || e.p === "b") && typeof e.start === "number" &&
-           isFinite(e.start) && typeof e.secs === "number" && e.secs > 0;
-  }
-  function save() {
+  function saveLocal() {
     try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------------- cloud backend ---------------- */
+  /* Breaks are batched into one document per person per month. That keeps the
+     document count tiny over years, and because nobody writes anyone else's
+     document, two phones logging at once cannot overwrite each other. */
+  function monthKey(p, startMs) {
+    var d = new Date(startMs);
+    return p + "-" + d.getFullYear() + "-" + pad(d.getMonth() + 1);
+  }
+  function rebuild() {
+    var all = [];
+    Object.keys(months).forEach(function (k) { all = all.concat(months[k]); });
+    state.entries = all;
+  }
+  function writeMonth(k) {
+    if (mode !== "cloud" || !db) return;
+    var list = months[k] || [];
+    var ref = db.doc("logs/" + k);
+    (list.length ? ref.set({ p: k.charAt(0), month: k.slice(2), entries: list }) : ref.delete())
+      .catch(onSyncErr);
+  }
+  function writeConfig(name) {
+    if (mode !== "cloud" || !db) return;
+    var body = name === "people"
+      ? { a: state.names.a, b: state.names.b }
+      : { a: state.running.a, b: state.running.b };
+    db.doc("config/" + name).set(body).catch(onSyncErr);
+  }
+  function onSyncErr(e) {
+    var code = (e && e.code) || "unavailable";
+    if (code === "quota_exceeded") syncErr = "The shared ledger is full — delete some old breaks.";
+    else if (code === "resource_exhausted") syncErr = "Too many changes at once — give it a moment.";
+    else if (code === "revoked" || code === "not_granted") syncErr = "Sync stopped — reopen the shared link.";
+    else syncErr = "Sync hiccup — reload to reconnect.";
+    renderSync();
+  }
+
+  function goCloud(d) {
+    db = d; mode = "cloud"; ready = false; state = blank();
+    renderSync(); renderAll();
+
+    db.doc("config/people").onSnapshot(function (snap) {
+      var v = snap.exists ? snap.data() : null;
+      if (v && v.a && v.b) state.names = { a: String(v.a), b: String(v.b) };
+      renderNames(); renderNotice(); renderAll();
+    }, onSyncErr);
+
+    db.doc("config/running").onSnapshot(function (snap) {
+      var v = snap.exists ? snap.data() : null;
+      state.running = v ? { a: num(v.a), b: num(v.b) } : { a: null, b: null };
+      renderAll();
+    }, onSyncErr);
+
+    db.collection("logs").onSnapshot(function (snap) {
+      months = {};
+      snap.docs.forEach(function (doc) {
+        var v = doc.data() || {};
+        if (Array.isArray(v.entries)) months[doc.id] = v.entries.filter(valid);
+      });
+      rebuild(); ready = true; syncErr = ""; renderAll();
+    }, onSyncErr);
+  }
+
+  /* ---------------- mutations (backend-agnostic) ---------------- */
+  function addEntry(e) {
+    if (mode === "cloud") {
+      var k = monthKey(e.p, e.start);
+      months[k] = (months[k] || []).concat([e]);
+      rebuild(); renderAll(); writeMonth(k);
+    } else {
+      state.entries.push(e); saveLocal(); renderAll();
+    }
+  }
+  function dropEntries(match) {
+    if (mode === "cloud") {
+      var touched = [];
+      Object.keys(months).forEach(function (k) {
+        var before = months[k].length;
+        months[k] = months[k].filter(function (x) { return !match(x); });
+        if (months[k].length !== before) touched.push(k);
+      });
+      rebuild(); renderAll(); touched.forEach(writeMonth);
+    } else {
+      state.entries = state.entries.filter(function (x) { return !match(x); });
+      saveLocal(); renderAll();
+    }
+  }
+  function saveEntry(id, next) {
+    if (mode === "cloud") {
+      var touched = {};
+      Object.keys(months).forEach(function (k) {
+        var before = months[k].length;
+        months[k] = months[k].filter(function (x) { return x.id !== id; });
+        if (months[k].length !== before) touched[k] = 1;
+      });
+      var nk = monthKey(next.p, next.start);
+      months[nk] = (months[nk] || []).concat([{ id: id, p: next.p, start: next.start, secs: next.secs, note: next.note }]);
+      touched[nk] = 1;
+      rebuild(); renderAll(); Object.keys(touched).forEach(writeMonth);
+    } else {
+      state.entries.forEach(function (e) {
+        if (e.id !== id) return;
+        e.p = next.p; e.start = next.start; e.secs = next.secs; e.note = next.note;
+        delete e.demo;
+      });
+      saveLocal(); renderAll();
+    }
+  }
+  function setRunning(p, v) {
+    state.running[p] = v;
+    if (mode === "cloud") writeConfig("running"); else saveLocal();
+    renderAll();
+  }
+  function setPersonName(p, v) {
+    state.names[p] = v;
+    if (mode === "cloud") writeConfig("people"); else saveLocal();
+    renderAll();
+  }
+  function replaceAll(next) {
+    if (mode === "cloud") {
+      var old = Object.keys(months), fresh = {};
+      next.entries.forEach(function (e) {
+        var k = monthKey(e.p, e.start);
+        (fresh[k] = fresh[k] || []).push(e);
+      });
+      months = fresh;
+      state.names = next.names;
+      old.concat(Object.keys(fresh)).forEach(function (k, i, arr) {
+        if (arr.indexOf(k) === i) writeMonth(k);
+      });
+      writeConfig("people");
+      rebuild(); renderAll();
+    } else {
+      state = { names: next.names, entries: next.entries, running: next.running, seeded: true };
+      saveLocal(); renderAll();
+    }
   }
 
   /* ============================ time helpers ============================ */
@@ -446,10 +604,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   function startOfDay(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
   function startOfWeek(t) { var d = new Date(startOfDay(t)); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
   function startOfMonth(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(1); return d.getTime(); }
-  function dayKey(t) {
-    var d = new Date(t);
-    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
-  }
+  function dayKey(t) { var d = new Date(t); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
 
   /* "1h 25m" — the ledger's unit is the minute; seconds only show on a live timer */
@@ -466,50 +621,41 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
     return (h ? h + ":" + pad(m) : m) + ":" + pad(ss);
   }
-  function timeOfDay(t) {
-    return new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  }
+  function timeOfDay(t) { return new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
   function dayLabel(t) {
     var today = startOfDay(Date.now()), d = startOfDay(t);
     if (d === today) return "Today";
     if (d === today - DAY) return "Yesterday";
     return new Date(t).toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
   }
+  function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
-  /* ============================ demo data ============================ */
-  /* Seeded so the first look is stable, and every row is flagged demo:true. */
+  /* ============================ demo data (local backend only) ============================ */
+  /* The shared ledger is seeded server-side instead, so the page never invents
+     rows into data the two of them are actually keeping. */
   function seed() {
     var s = 20260906, rnd = function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
     var out = [], today = startOfDay(Date.now());
     var plan = {
-      a: { count: [1, 2], mins: [15, 45], notes: ["walk", "coffee", "reading", "gym", "call with mum"] },
-      b: { count: [1, 2], mins: [20, 55], notes: ["yoga", "podcast", "garden", "nap", "chai + book"] }
+      a: { mins: [15, 45], notes: ["walk", "coffee", "reading", "gym", "call with mum"] },
+      b: { mins: [20, 55], notes: ["yoga", "podcast", "garden", "nap", "chai + book"] }
     };
     ["a", "b"].forEach(function (p) {
       var cfg = plan[p];
       for (var back = 13; back >= 0; back--) {
-        if (rnd() < 0.16) continue;                       // some days nobody gets a break
-        var n = cfg.count[0] + (rnd() < 0.45 ? 1 : 0);
+        if (rnd() < 0.16) continue;
+        var n = 1 + (rnd() < 0.45 ? 1 : 0);
         for (var i = 0; i < n; i++) {
           var hour = 8 + Math.floor(rnd() * 12);
           var mins = cfg.mins[0] + Math.floor(rnd() * (cfg.mins[1] - cfg.mins[0]));
           var start = today - back * DAY + hour * 3600000 + Math.floor(rnd() * 50) * 60000;
           if (start > Date.now()) continue;
-          out.push({
-            id: "demo-" + p + "-" + back + "-" + i,
-            p: p, start: start, secs: mins * 60,
-            note: cfg.notes[Math.floor(rnd() * cfg.notes.length)],
-            demo: true
-          });
+          out.push({ id: "demo-" + p + "-" + back + "-" + i, p: p, start: start, secs: mins * 60,
+                     note: cfg.notes[Math.floor(rnd() * cfg.notes.length)], demo: true });
         }
       }
     });
     return out;
-  }
-  if (!state.seeded && state.entries.length === 0) {
-    state.entries = seed();
-    state.seeded = true;
-    save();
   }
   function hasDemo() { return state.entries.some(function (e) { return e.demo; }); }
 
@@ -524,7 +670,6 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     if (period === "month") return startOfMonth(now);
     return 0;
   }
-  /* Live seconds from a timer that is still running, counted into the window it started in. */
   function liveSecs(p, from) {
     var r = state.running[p];
     if (!r) return 0;
@@ -543,15 +688,31 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     return t;
   }
   function totalWithLive(p, from, to) { return totalFor(p, from, to) + (to ? 0 : liveSecs(p, from)); }
-  function nameOf(p) { return state.names[p] || (p === "a" ? "You" : "Your wife"); }
+  function nameOf(p) { return state.names[p] || (p === "a" ? "Person A" : "Person B"); }
   function esc(str) {
     return String(str).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  function namesUnset() { return state.names.a === "Person A" && state.names.b === "Person B"; }
+
+  /* ============================ render: sync pill ============================ */
+  function renderSync() {
+    var el = document.getElementById("sync");
+    var m = syncErr ? "stalled" : (!ready ? "loading" : mode);
+    var text = syncErr ? syncErr
+      : !ready ? "Opening the shared ledger…"
+      : mode === "cloud" ? "Shared · you both see this"
+      : "This device only";
+    el.setAttribute("data-mode", m);
+    el.innerHTML = '<span class="dot"></span>' + esc(text);
+  }
 
   /* ============================ render: balance ============================ */
   function renderBalance() {
+    var el = document.getElementById("balance");
+    if (!ready) { el.innerHTML = '<p class="loading">Fetching the breaks you have both logged…</p>'; return; }
+
     var from = periodStart();
     var a = totalWithLive("a", from), b = totalWithLive("b", from);
     var total = a + b, diff = Math.abs(a - b);
@@ -560,15 +721,15 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     var html = "";
 
     if (total === 0) {
-      html += '<p class="eyebrow">Ahead ' + label + '</p>';
+      html += '<p class="eyebrow">Ahead ' + esc(label) + '</p>';
       html += '<div class="hero"><span class="hero-name">Nothing logged yet</span></div>';
       html += '<p class="fulcrum-note">Press a timer below when either of you steps away, or add a break by hand.</p>';
       html += '<div class="beam"><div class="beam-empty">no break time ' + esc(label) + '</div></div>';
-      document.getElementById("balance").innerHTML = html;
+      el.innerHTML = html;
       return;
     }
 
-    /* State chip: "even" is generous on purpose — this is a marriage, not an audit. */
+    /* "Even" is deliberately generous — this is a marriage, not an audit. */
     var share = total ? diff / total : 0;
     var st = (diff <= 600 || share <= 0.12) ? "even" : (share <= 0.3 ? "off" : "lopsided");
     var stText = st === "even" ? "Pretty even" : st === "off" ? "A little uneven" : "Lopsided";
@@ -578,9 +739,10 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     if (!lead) {
       html += '<span class="hero-name">Dead even</span>';
     } else {
-      html += '<span class="hero-dot ' + lead + '" style="--c:var(--p' + (lead === "a" ? "1" : "2") + ')"></span>';
+      var v = lead === "a" ? "1" : "2";
+      html += '<span class="hero-dot" style="--c:var(--p' + v + ')"></span>';
       html += '<span class="hero-name">' + esc(nameOf(lead)) + '</span>';
-      html += '<span class="hero-gap" style="--c:var(--p' + (lead === "a" ? "1" : "2") + ')">+' + dur(diff) + '</span>';
+      html += '<span class="hero-gap" style="--c:var(--p' + v + ')">+' + dur(diff) + '</span>';
     }
     html += '<span class="chip" data-state="' + st + '">' + stText + '</span>';
     html += '</div>';
@@ -598,15 +760,14 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
       '<span class="legend-item"><span class="pct">' + Math.round(pb) + '%</span> <b class="mono">' + dur(b) +
         '</b> ' + esc(nameOf("b")) + '<span class="dot p2"></span></span>' +
       '</div>';
-    html += '<p class="fulcrum-note">The dotted line is an even split &mdash; ' + dur(total / 2) + ' each of ' + dur(total) + ' total.</p>';
-
-    document.getElementById("balance").innerHTML = html;
+    html += '<p class="fulcrum-note">The line is an even split &mdash; ' + dur(total / 2) + ' each of ' + dur(total) + ' total.</p>';
+    el.innerHTML = html;
   }
 
   /* ============================ render: timer cards ============================ */
   function renderTimers() {
     var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
-    var html = ["a", "b"].map(function (p) {
+    document.getElementById("timers").innerHTML = ["a", "b"].map(function (p) {
       var running = !!state.running[p];
       var cls = p === "a" ? "p1" : "p2";
       var wash = p === "a" ? "var(--p1-wash)" : "var(--p2-wash)";
@@ -624,7 +785,6 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
            '<span>This week <b data-week="' + p + '">' + dur(week) + '</b></span></div>';
       return s + "</div>";
     }).join("");
-    document.getElementById("timers").innerHTML = html;
   }
 
   /* Only the live numbers tick — a full re-render every second would fight the forms. */
@@ -645,6 +805,9 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   /* ============================ render: diverging day chart ============================ */
   var DAYS = 14;
   function renderChart() {
+    var el = document.getElementById("chart");
+    if (!ready) { el.innerHTML = '<p class="loading">Loading the last two weeks…</p>'; return; }
+
     var today = startOfDay(Date.now());
     var rows = [], max = 0;
     for (var i = DAYS - 1; i >= 0; i--) {
@@ -654,7 +817,6 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
       max = Math.max(max, a, b);
       rows.push({ from: from, a: a, b: b, isToday: i === 0 });
     }
-    var el = document.getElementById("chart");
     if (max === 0) {
       el.innerHTML = '<p class="empty">No breaks in the last ' + DAYS + ' days yet. Once you log a few, this chart puts ' +
         esc(nameOf("a")) + ' on the left of the centre line and ' + esc(nameOf("b")) + ' on the right, one row per day.</p>';
@@ -665,7 +827,6 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
       '<span class="legend-item"><span class="dot p1"></span>' + esc(nameOf("a")) + '</span>' +
       '<span class="legend-item">' + esc(nameOf("b")) + '<span class="dot p2"></span></span>' +
       '</div><div class="rows">';
-
     rows.forEach(function (r) {
       var d = new Date(r.from);
       var lab = r.isToday ? "today" : d.toLocaleDateString([], { weekday: "short" }).toLowerCase() + " " + d.getDate();
@@ -691,7 +852,7 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     var cls = p === "a" ? "p1" : "p2";
     var d = new Date(r.from).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
     return '<button class="bar ' + cls + '" type="button" style="width:' + w.toFixed(2) + '%"' +
-      ' data-tip="' + esc(nameOf(p) + " \u00b7 " + dur(v) + " \u00b7 " + d) + '"' +
+      ' data-tip="' + esc(nameOf(p) + " · " + dur(v) + " · " + d) + '"' +
       ' aria-label="' + esc(nameOf(p) + ", " + dur(v) + " on " + d) + '"></button>';
   }
 
@@ -699,11 +860,11 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   var editing = null;
   function renderLog() {
     var el = document.getElementById("log");
+    if (!ready) { el.innerHTML = '<p class="loading">Loading the log…</p>'; return; }
+
     var list = state.entries.slice().sort(function (x, y) { return y.start - x.start; });
-    if (!list.length) {
-      el.innerHTML = '<p class="empty">No breaks logged yet.</p>';
-      return;
-    }
+    if (!list.length) { el.innerHTML = '<p class="empty">No breaks logged yet.</p>'; return; }
+
     var groups = [], byDay = {};
     list.forEach(function (e) {
       var k = dayKey(e.start);
@@ -714,11 +875,10 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     var html = groups.slice(0, 40).map(function (g) {
       var ta = 0, tb = 0;
       g.items.forEach(function (e) { if (e.p === "a") ta += e.secs; else tb += e.secs; });
-      var s = '<div class="daygroup"><div class="dayhead"><span class="d">' + esc(dayLabel(g.at)) + '</span>' +
+      return '<div class="daygroup"><div class="dayhead"><span class="d">' + esc(dayLabel(g.at)) + '</span>' +
         '<span class="t"><span><span class="dot p1"></span>' + dur(ta) + '</span>' +
-        '<span><span class="dot p2"></span>' + dur(tb) + '</span></span></div>';
-      s += g.items.map(function (e) { return editing === e.id ? editRow(e) : entryRow(e); }).join("");
-      return s + "</div>";
+        '<span><span class="dot p2"></span>' + dur(tb) + '</span></span></div>' +
+        g.items.map(function (e) { return editing === e.id ? editRow(e) : entryRow(e); }).join("") + "</div>";
     }).join("");
     if (groups.length > 40) html += '<p class="empty">Showing the most recent 40 days.</p>';
     el.innerHTML = html;
@@ -744,31 +904,41 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     var dateVal = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
     var timeVal = pad(d.getHours()) + ":" + pad(d.getMinutes());
     return '<div class="editrow">' +
-      '<div class="field"><label>Who</label><select id="eWho">' +
+      '<div class="field"><label for="eWho">Who</label><select id="eWho">' +
         '<option value="a"' + (e.p === "a" ? " selected" : "") + ">" + esc(nameOf("a")) + "</option>" +
         '<option value="b"' + (e.p === "b" ? " selected" : "") + ">" + esc(nameOf("b")) + "</option>" +
       "</select></div>" +
-      '<div class="field"><label>Date</label><input id="eDate" type="date" value="' + dateVal + '"></div>' +
-      '<div class="field"><label>Started</label><input id="eTime" type="time" value="' + timeVal + '"></div>' +
-      '<div class="field"><label>Minutes</label><input id="eMins" type="number" min="1" max="1440" value="' +
+      '<div class="field"><label for="eDate">Date</label><input id="eDate" type="date" value="' + dateVal + '"></div>' +
+      '<div class="field"><label for="eTime">Started</label><input id="eTime" type="time" value="' + timeVal + '"></div>' +
+      '<div class="field"><label for="eMins">Minutes</label><input id="eMins" type="number" min="1" max="1440" value="' +
         Math.max(1, Math.round(e.secs / 60)) + '"></div>' +
-      '<div class="field grow"><label>Note</label><input id="eNote" maxlength="60" value="' + esc(e.note || "") + '"></div>' +
+      '<div class="field grow"><label for="eNote">Note</label><input id="eNote" maxlength="60" value="' + esc(e.note || "") + '"></div>' +
       '<button class="btn btn-sm" type="button" data-save="' + esc(e.id) + '">Save</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-cancel="1">Cancel</button>' +
       "</div>";
   }
 
-  /* ============================ render: demo notice + names ============================ */
+  /* ============================ render: notices, names, tabs ============================ */
   function renderNotice() {
     var el = document.getElementById("demoNotice");
-    if (!hasDemo()) { el.innerHTML = ""; return; }
-    el.innerHTML = '<div class="notice"><p><b>These are example breaks</b>, filled in so you can see how the ' +
-      'ledger reads. None of it is yours &mdash; clear it whenever you are ready to start for real.</p>' +
-      '<button class="btn btn-sm" type="button" id="clearDemo">Clear examples</button></div>';
+    if (!ready) { el.innerHTML = ""; return; }
+    if (namesUnset()) {
+      el.innerHTML = '<div class="notice"><p><b>Put your names in</b> using the boxes above. You are both looking at ' +
+        'the same ledger, so a name typed on one phone shows up on the other.</p></div>';
+      return;
+    }
+    if (hasDemo()) {
+      el.innerHTML = '<div class="notice"><p><b>These are example breaks</b>, filled in so the ledger has something to ' +
+        'show. None of it is yours &mdash; clear it whenever you are ready to start for real.</p>' +
+        '<button class="btn btn-sm" type="button" id="clearDemo">Clear examples</button></div>';
+      return;
+    }
+    el.innerHTML = "";
   }
   function renderNames() {
-    document.getElementById("n1").value = nameOf("a");
-    document.getElementById("n2").value = nameOf("b");
+    var n1 = document.getElementById("n1"), n2 = document.getElementById("n2");
+    if (document.activeElement !== n1) n1.value = nameOf("a");
+    if (document.activeElement !== n2) n2.value = nameOf("b");
     document.querySelectorAll("[data-nm]").forEach(function (n) { n.textContent = nameOf(n.getAttribute("data-nm")); });
   }
   function renderTabs() {
@@ -776,35 +946,28 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
       b.setAttribute("aria-pressed", String(b.getAttribute("data-period") === period));
     });
   }
-
   function renderAll() {
-    renderNames(); renderNotice(); renderTabs();
+    renderSync(); renderNames(); renderNotice(); renderTabs();
     renderBalance(); renderTimers(); renderChart(); renderLog();
-    var blob = document.getElementById("blob");
-    if (!document.querySelector("details.backup").open) blob.value = JSON.stringify(state);
+    if (!document.querySelector("details.backup").open) {
+      document.getElementById("blob").value = snapshotJson();
+    }
+  }
+  function snapshotJson() {
+    return JSON.stringify({ names: state.names, entries: state.entries, running: state.running, seeded: true }, null, 2);
   }
 
   /* ============================ actions ============================ */
-  function startBreak(p) {
-    if (state.running[p]) return;
-    state.running[p] = Date.now();
-    save(); renderAll();
-  }
-  function stopBreak(p) {
-    var began = state.running[p];
-    if (!began) return;
-    var secs = Math.round((Date.now() - began) / 1000);
-    state.running[p] = null;
-    if (secs >= 5) {
-      state.entries.push({ id: "e" + began + Math.floor(Math.random() * 1000), p: p, start: began, secs: secs, note: "" });
-    }
-    save(); renderAll();
-  }
-
   document.getElementById("timers").addEventListener("click", function (ev) {
     var s = ev.target.closest("[data-start]"), t = ev.target.closest("[data-stop]");
-    if (s) startBreak(s.getAttribute("data-start"));
-    if (t) stopBreak(t.getAttribute("data-stop"));
+    if (s) { var p = s.getAttribute("data-start"); if (!state.running[p]) setRunning(p, Date.now()); }
+    if (t) {
+      var q = t.getAttribute("data-stop"), began = state.running[q];
+      if (!began) return;
+      var secs = Math.round((Date.now() - began) / 1000);
+      setRunning(q, null);
+      if (secs >= 5) addEntry({ id: newId(), p: q, start: began, secs: secs, note: "" });
+    }
   });
 
   document.getElementById("tabs").addEventListener("click", function (ev) {
@@ -819,16 +982,15 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   function onName(ev) {
     var i = ev.target.closest("[data-name]");
     if (!i) return;
+    var p = i.getAttribute("data-name");
     var v = i.value.trim().slice(0, 18);
-    if (!v) { i.value = nameOf(i.getAttribute("data-name")); return; }
-    state.names[i.getAttribute("data-name")] = v;
-    save(); renderAll();
+    if (!v || v === nameOf(p)) { i.value = nameOf(p); return; }
+    setPersonName(p, v);
   }
 
   document.getElementById("demoNotice").addEventListener("click", function (ev) {
     if (!ev.target.closest("#clearDemo")) return;
-    state.entries = state.entries.filter(function (e) { return !e.demo; });
-    save(); renderAll();
+    dropEntries(function (e) { return !!e.demo; });
   });
 
   /* --- add-by-hand form --- */
@@ -851,44 +1013,41 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     var mins = parseInt(document.getElementById("aMins").value, 10);
     if (!date || !time || !(mins > 0)) return;
     var parts = date.split("-"), hm = time.split(":");
-    var start = new Date(+parts[0], +parts[1] - 1, +parts[2], +hm[0], +hm[1], 0, 0).getTime();
-    state.entries.push({
-      id: "m" + Date.now() + Math.floor(Math.random() * 1000),
-      p: addWho, start: start, secs: mins * 60,
+    addEntry({
+      id: newId(), p: addWho,
+      start: new Date(+parts[0], +parts[1] - 1, +parts[2], +hm[0], +hm[1], 0, 0).getTime(),
+      secs: mins * 60,
       note: document.getElementById("aNote").value.trim().slice(0, 60)
     });
     document.getElementById("aNote").value = "";
-    save(); renderAll();
   });
 
   /* --- log edit / delete --- */
   document.getElementById("log").addEventListener("click", function (ev) {
-    var ed = ev.target.closest("[data-edit]");
-    var del = ev.target.closest("[data-del]");
-    var sv = ev.target.closest("[data-save]");
-    var cx = ev.target.closest("[data-cancel]");
+    var ed = ev.target.closest("[data-edit]"), del = ev.target.closest("[data-del]");
+    var sv = ev.target.closest("[data-save]"), cx = ev.target.closest("[data-cancel]");
     if (ed) { editing = ed.getAttribute("data-edit"); renderLog(); return; }
     if (cx) { editing = null; renderLog(); return; }
     if (del) {
       var id = del.getAttribute("data-del");
-      state.entries = state.entries.filter(function (e) { return e.id !== id; });
-      editing = null; save(); renderAll(); return;
+      editing = null;
+      dropEntries(function (e) { return e.id === id; });
+      return;
     }
     if (sv) {
       var eid = sv.getAttribute("data-save");
-      var e = state.entries.filter(function (x) { return x.id === eid; })[0];
-      if (!e) return;
       var dv = document.getElementById("eDate").value, tv = document.getElementById("eTime").value;
       var mv = parseInt(document.getElementById("eMins").value, 10);
+      editing = null;
       if (dv && tv && mv > 0) {
         var pp = dv.split("-"), hh = tv.split(":");
-        e.start = new Date(+pp[0], +pp[1] - 1, +pp[2], +hh[0], +hh[1], 0, 0).getTime();
-        e.secs = mv * 60;
-        e.p = document.getElementById("eWho").value === "b" ? "b" : "a";
-        e.note = document.getElementById("eNote").value.trim().slice(0, 60);
-        delete e.demo;
-      }
-      editing = null; save(); renderAll();
+        saveEntry(eid, {
+          p: document.getElementById("eWho").value === "b" ? "b" : "a",
+          start: new Date(+pp[0], +pp[1] - 1, +pp[2], +hh[0], +hh[1], 0, 0).getTime(),
+          secs: mv * 60,
+          note: document.getElementById("eNote").value.trim().slice(0, 60)
+        });
+      } else { renderLog(); }
     }
   });
 
@@ -914,11 +1073,11 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   /* --- backup & restore --- */
   var say = document.getElementById("bSay");
   document.querySelector("details.backup").addEventListener("toggle", function () {
-    if (this.open) document.getElementById("blob").value = JSON.stringify(state, null, 2);
+    if (this.open) document.getElementById("blob").value = snapshotJson();
   });
   document.getElementById("bCopy").addEventListener("click", function () {
     var ta = document.getElementById("blob");
-    ta.value = JSON.stringify(state, null, 2);
+    ta.value = snapshotJson();
     ta.select();
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(ta.value).then(
@@ -933,23 +1092,32 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     var txt = document.getElementById("blob").value.trim();
     if (!txt) { say.textContent = "Paste a backup into the box first."; return; }
     var parsed;
-    try { parsed = JSON.parse(txt); } catch (e) { say.textContent = "That is not readable backup text — paste the whole thing, including the outer braces."; return; }
+    try { parsed = JSON.parse(txt); }
+    catch (e) { say.textContent = "That is not readable backup text — paste the whole thing, braces included."; return; }
     if (!parsed || !Array.isArray(parsed.entries)) { say.textContent = "That backup has no breaks in it. Nothing was changed."; return; }
-    state = {
+    if (mode === "cloud" && !window.confirm("Replace the shared ledger for both of you with this backup?")) return;
+    var entries = parsed.entries.filter(valid).map(function (e) {
+      return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "" };
+    });
+    replaceAll({
       names: (parsed.names && parsed.names.a && parsed.names.b)
         ? { a: String(parsed.names.a), b: String(parsed.names.b) } : state.names,
-      entries: parsed.entries.filter(valid),
-      running: parsed.running ? { a: num(parsed.running.a), b: num(parsed.running.b) } : { a: null, b: null },
-      seeded: true
-    };
-    save(); renderAll();
-    say.textContent = "Restored " + state.entries.length + " breaks.";
+      entries: entries,
+      running: parsed.running ? { a: num(parsed.running.a), b: num(parsed.running.b) } : { a: null, b: null }
+    });
+    say.textContent = "Restored " + entries.length + " breaks.";
   });
   document.getElementById("bReset").addEventListener("click", function () {
-    if (!window.confirm("Erase every break for both of you? This cannot be undone.")) return;
-    state = blank();
-    state.seeded = true;
-    save(); renderAll();
+    var msg = mode === "cloud"
+      ? "Erase every break for both of you, on both phones? This cannot be undone."
+      : "Erase every break for both of you? This cannot be undone.";
+    if (!window.confirm(msg)) return;
+    if (mode === "cloud") {
+      setRunning("a", null); setRunning("b", null);
+      dropEntries(function () { return true; });
+    } else {
+      state = blank(); state.seeded = true; saveLocal(); renderAll();
+    }
     say.textContent = "Everything erased. Fresh start.";
   });
 
@@ -961,7 +1129,27 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
     syncWho();
   })();
 
-  renderAll();
+  function startLocal() {
+    mode = "local"; ready = true;
+    state = loadLocal();
+    if (!state.seeded && state.entries.length === 0) { state.entries = seed(); state.seeded = true; saveLocal(); }
+    renderAll();
+  }
+
+  /* window.claude only exists inside the claude.ai viewer; a downloaded copy of
+     this file has no capabilities at all and runs entirely on localStorage. */
+  var viewer = typeof window.claude !== "undefined" && window.claude && typeof window.claude.use === "function";
+  if (!viewer) {
+    startLocal();
+  } else {
+    ready = false;
+    state = blank();
+    renderAll();
+    window.claude.use("db").then(function (d) {
+      if (d) goCloud(d); else startLocal();
+    }, function () { startLocal(); });
+  }
+
   setInterval(tick, 1000);
   /* A tab left open overnight should not still be showing yesterday's "today". */
   var bootDay = startOfDay(Date.now());
@@ -971,5 +1159,6 @@ footer.foot{margin-top:34px;font-size:.78rem;color:var(--muted);line-height:1.6;
   document.addEventListener("visibilitychange", function () { if (!document.hidden && !editing) renderAll(); });
 })();
 </script>
+
 </body>
 </html>

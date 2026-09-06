@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#21202C"/>
+      <stop offset="1" stop-color="#141320"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- left arc: Yash -->
+  <path d="M 231.7 118.1 A 140 140 0 0 0 231.7 393.9" fill="none" stroke="#7B7EE6" stroke-width="46" stroke-linecap="round"/>
+  <!-- right arc: Kratika -->
+  <path d="M 280.3 118.1 A 140 140 0 0 1 280.3 393.9" fill="none" stroke="#CE9032" stroke-width="46" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="15" fill="#EDEBF3" opacity=".85"/>
+</svg>

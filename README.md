@@ -1,20 +1,22 @@
 # Break Ledger
 
-A standalone break-time tracker for two people, at `public/break-tracker.html`.
+A break-time tracker for two people, installable on a phone. Lives in
+`public/breaks/`.
 
-It is one self-contained HTML file: all CSS and JavaScript are inline, there are
-no dependencies, and it needs no build step and no network (web fonts are the
-only external request, and it falls back cleanly without them).
+- **On the phone:** open `/breaks/` in Safari, then Share -> Add to Home Screen.
+  It launches full screen with its own icon and works without a connection.
+- **Files:** `index.html` is the whole app (all CSS and JS inline, no build
+  step, no dependencies). `manifest.webmanifest` and the PNG icons make it
+  installable; `sw.js` caches the shell for offline use and is scoped to
+  `/breaks/`, so it never intercepts anything else on the domain.
+- **Storage:** breaks live in that browser's local storage, so one device
+  holds the ledger. Use the Backup & restore panel before clearing browser
+  data or moving to a new phone.
+- **Shared mode:** the same file detects the claude.ai artifact runtime and
+  switches to a shared store there, which is how one page can sync between two
+  devices. Served any other way it stays entirely local.
 
-- Open the file directly from disk, or reach it at `/break-tracker.html` once
-  this site is deployed — Vercel serves files in `public/` before applying the
-  SPA rewrite.
-- Breaks are stored in that browser's local storage, so one device holds the
-  ledger. Use the Backup & restore panel before clearing browser data or moving
-  to a new phone.
-- The file also detects the claude.ai artifact runtime and switches to a shared
-  store there, which is how the same page can sync between two devices. Opened
-  any other way it stays entirely local.
+Regenerate the icons from `icon.svg` at 180, 192 and 512 px if the mark changes.
 
 ---
 

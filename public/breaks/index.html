@@ -2,11 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Break Ledger</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png" sizes="192x192">
 <meta name="apple-mobile-web-app-title" content="Break Ledger">
 <meta name="theme-color" content="#F4F3F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#131218" media="(prefers-color-scheme: dark)">
@@ -84,7 +87,8 @@
 
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none !important}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+button{-webkit-user-select:none;user-select:none;touch-action:manipulation}
 body{
   margin:0;
   color:var(--ink);
@@ -95,11 +99,16 @@ body{
     radial-gradient(58% 40% at 98% -8%, var(--glow2), transparent 68%),
     var(--ground);
   background-attachment:fixed;
+  overscroll-behavior-y:contain;
 }
 :focus-visible{outline:2px solid var(--p1);outline-offset:2px;border-radius:5px}
 @media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;transition-duration:.001ms !important}}
 
-.wrap{max-width:1020px;margin:0 auto;padding:30px 18px 72px}
+.wrap{
+  max-width:1020px;margin:0 auto;
+  padding:calc(30px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right))
+          calc(72px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
+}
 .eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0}
 
 /* ---------- masthead ---------- */
@@ -134,6 +143,13 @@ body{
 .sync[data-mode="cloud"] .dot{--c:var(--p1);animation:pulse 2.4s ease-in-out infinite}
 .sync[data-mode="stalled"] .dot{--c:var(--p2)}
 
+.hint{
+  display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:16px;padding:11px 13px;
+  border:1px dashed var(--line-2);border-radius:var(--radius);background:var(--surface);
+  font-size:.85rem;color:var(--ink-2);
+}
+.hint p{margin:0;flex:1 1 220px}
+.hint b{color:var(--ink)}
 .section{margin-top:34px}
 .section > .eyebrow{margin-bottom:11px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
@@ -239,7 +255,7 @@ body{
 .track.right .bar{border-radius:1px 5px 5px 1px;margin-left:2px}
 .bar:hover,.bar:focus-visible{filter:brightness(1.14)}
 .daylab{text-align:center;font-size:.7rem;color:var(--muted);white-space:nowrap;border-left:1px solid var(--line-2);border-right:1px solid var(--line-2)}
-.daylab.today{color:var(--ink);font-weight:700}
+.daylab.is-today{color:var(--ink);font-weight:700}
 .chart-foot{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted)}
 #tip{position:fixed;z-index:40;pointer-events:none;opacity:0;transform:translate(-50%,-118%);background:var(--ink);color:var(--ground);font-size:.76rem;font-weight:500;padding:6px 9px;border-radius:7px;white-space:nowrap;box-shadow:0 8px 22px -10px rgba(0,0,0,.7);transition:opacity .1s}
 #tip[data-show="true"]{opacity:1}
@@ -282,13 +298,59 @@ textarea#blob{font-family:'IBM Plex Mono',monospace;font-size:.74rem;line-height
 .say{font-size:.82rem;color:var(--muted);min-height:1.2em}
 footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65;border-top:1px solid var(--line);padding-top:14px}
 
-@media (max-width:560px){
-  .entry{flex-wrap:wrap;gap:6px 10px}
-  .entry .note{flex-basis:100%;order:5}
-  .entry .when{width:auto}
-  .rows{grid-template-columns:1fr 54px 1fr}
-  .tl-row{grid-template-columns:48px 1fr;gap:8px}
-  .today{padding:18px 14px 16px}
+@media (max-width:600px){
+  /* Both dials stay side by side — this is a comparison, so one must never
+     scroll out of view while you look at the other. */
+  .wrap{padding-left:calc(13px + env(safe-area-inset-left));padding-right:calc(13px + env(safe-area-inset-right))}
+  .cards{grid-template-columns:1fr 1fr;gap:9px}
+  .card{padding:12px 9px 11px;gap:9px;border-radius:12px}
+  .card-name{font-size:.85rem;gap:6px}
+  .card-top{min-height:18px}
+  .live-tag{font-size:.58rem;letter-spacing:.07em;gap:4px}
+  .dial-wrap{width:100%;max-width:124px;height:auto;aspect-ratio:1}
+  .dial-num{font-size:1.28rem;letter-spacing:-.05em}
+  .dial-cap{font-size:.55rem;letter-spacing:.08em}
+  .btn{padding:10px 8px;font-size:.85rem}
+  .card-foot{flex-direction:column;gap:2px;font-size:.72rem;padding-top:9px}
+  .today{padding:14px 11px 13px;border-radius:14px}
+
+  .masthead h1{font-size:1.7rem}
+  .mast-meta{font-size:.76rem}
+  .names{gap:8px 12px;padding:10px 12px}
+  .names .eyebrow{flex-basis:100%}
+  .sync{margin-left:0;flex-basis:100%}
+  .namefield input{width:8ch}
+
+  .tl-row{grid-template-columns:56px 1fr;gap:7px}
+  .tl-name{font-size:.68rem;gap:5px}
+  .tl-track{height:24px}
+  .tl-hour{font-size:.58rem}
+
+  .hero-name,.hero-gap{font-size:1.5rem}
+  .balance{padding:16px 14px}
+  .legend{gap:6px 10px}
+  .legend-item{font-size:.8rem}
+  .panel{padding:14px 12px}
+  .rows{grid-template-columns:1fr 50px 1fr}
+  .daylab{font-size:.63rem}
+
+  /* iOS zooms the whole page when a focused field is under 16px */
+  .field input,.field select,textarea#blob{font-size:16px}
+  .field.grow{flex-basis:100%}
+  .form{gap:9px 10px}
+
+  /* Two tidy lines per break: who + how long + controls, then when + note. */
+  .entry{flex-wrap:wrap;gap:2px 9px;padding:9px 2px}
+  .entry .who-tag{flex:1 1 auto;order:1}
+  .entry .dur{order:2}
+  .entry .acts{order:3;margin-left:auto}
+  .entry .when{order:4;width:auto;flex:none;font-size:.72rem}
+  .entry .note{order:5;flex:1 1 60px;font-size:.78rem}
+  .live-word{display:none}
+}
+@media (display-mode: standalone){
+  /* Installed on the home screen there is no browser chrome to scroll past. */
+  .wrap{padding-top:calc(18px + env(safe-area-inset-top))}
 }
 </style>
 </head>
@@ -309,6 +371,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       <input id="n2" data-name="b" maxlength="18" spellcheck="false" autocomplete="off" aria-label="Second person&rsquo;s name"></div>
     <span class="sync" id="sync"></span>
   </div>
+
+  <div id="installHint" hidden></div>
 
   <section class="section">
     <p class="eyebrow">Today</p>
@@ -689,7 +753,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       var shown = running ? liveSecs(p) : today;
       var s = '<div class="card ' + (p === "a" ? "p1" : "p2") + '" data-running="' + running + '">';
       s += '<div class="card-top"><span class="card-name"><span class="dot"></span>' + esc(nameOf(p)) + "</span>" +
-           (running ? '<span class="live-tag"><span class="pulse"></span>on a break</span>' : "") + "</div>";
+           (running ? '<span class="live-tag"><span class="pulse"></span><span class="live-word">on a break</span></span>' : "") + "</div>";
       s += '<div class="dial-wrap" data-dial="' + p + '">' + dialSvg(shown / 3600) +
            '<span class="dial-val"><span class="dial-num" data-live="' + p + '">' +
            (running ? clock(shown) : dur(today)) + '</span>' +
@@ -845,7 +909,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       var d = new Date(r.from);
       var lab = r.isToday ? "today" : d.toLocaleDateString([], { weekday: "short" }).toLowerCase() + " " + d.getDate();
       html += '<div class="track left">' + bar(r, "a", max) + '</div><div class="daylab' +
-        (r.isToday ? " today" : "") + '">' + esc(lab) + '</div><div class="track right">' + bar(r, "b", max) + "</div>";
+        (r.isToday ? " is-today" : "") + '">' + esc(lab) + '</div><div class="track right">' + bar(r, "b", max) + "</div>";
     });
     html += "</div>";
     var pk = new Date(rows.reduce(function (best, r) {
@@ -1084,6 +1148,40 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     if (startOfDay(Date.now()) !== bootDay) { bootDay = startOfDay(Date.now()); renderAll(); }
   }, 60000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden && !editing) renderAll(); });
+
+  /* ============================ installed-app plumbing ============================ */
+  var framed = window.top !== window.self;
+  var standalone = window.navigator.standalone === true ||
+                   (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+
+  /* Offline shell. Registration is scoped to this folder, so it never touches
+     anything else served from the same domain. */
+  if (!framed && "serviceWorker" in navigator &&
+      (location.protocol === "https:" || location.hostname === "localhost")) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () { /* offline support is optional */ });
+    });
+  }
+
+  /* Adding to the home screen is a Safari menu item, not something the page can
+     trigger, so the most a page can honestly do is say where the button is. */
+  (function installHint() {
+    var el = document.getElementById("installHint");
+    if (!el || framed || standalone) return;
+    var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!iOS) return;
+    try { if (window.localStorage.getItem("breakLedger.hint") === "off") return; } catch (e) {}
+    el.hidden = false;
+    el.innerHTML = '<div class="hint"><p><b>Put this on your home screen.</b> Tap the Share button below, ' +
+      'then <b>Add to Home Screen</b> — it opens full screen with its own icon, and works without signal.</p>' +
+      '<button class="btn btn-sm btn-quiet" type="button" id="hintOff">Got it</button></div>';
+    el.addEventListener("click", function (ev) {
+      if (!ev.target.closest("#hintOff")) return;
+      el.hidden = true;
+      try { window.localStorage.setItem("breakLedger.hint", "off"); } catch (e) {}
+    });
+  })();
 })();
 </script>
 </body>

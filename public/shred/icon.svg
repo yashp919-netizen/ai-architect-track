@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="The Shred">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#35916A"/>
+      <stop offset="1" stop-color="#1D5E42"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <!-- Broad shoulders over a narrow waist: the whole plan in one mark. -->
+  <rect x="104" y="146" width="304" height="50" rx="25" fill="#FFFFFF"/>
+  <path d="M134 224 H378 L292 386 Q256 424 220 386 Z" fill="#FFFFFF"/>
+</svg>

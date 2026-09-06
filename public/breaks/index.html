@@ -120,7 +120,6 @@ body{
 .mast-meta{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--muted);padding-bottom:3px}
 .mast-meta b{color:var(--ink-2);font-weight:600}
 .mast-meta .sep{width:4px;height:4px;border-radius:50%;background:var(--line-2)}
-.tagline{margin:8px 0 0;color:var(--muted);font-size:.9rem;max-width:58ch}
 
 /* ---------- names bar ---------- */
 .names{
@@ -237,10 +236,23 @@ body{
 .fnote{margin:10px 0 0;font-size:.78rem;color:var(--ink-2)}
 .fnote b{font-weight:600}
 .fnote em{font-style:normal;color:var(--muted)}
-.wsel{display:flex;gap:3px;background:var(--sunken);padding:3px;border-radius:8px}
-.wsel button{flex:1;font:inherit;font-size:.78rem;font-weight:600;color:var(--muted);background:transparent;
-  border:0;padding:6px 4px;border-radius:6px;cursor:pointer}
-.wsel button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.ksel{display:flex;gap:2px;background:var(--sunken);padding:3px;border-radius:8px}
+.ksel button{flex:1;font:inherit;font-size:.74rem;font-weight:600;color:var(--muted);background:transparent;
+  border:0;padding:6px 2px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.ksel button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.ksel button[aria-pressed="true"][data-k$=":ashvi"]{color:var(--c)}
+/* solo duty reads as an outline: time given, not time taken */
+.solo-strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.solo-lab{font-size:.68rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);flex-basis:100%}
+.solo-beam{display:flex;gap:2px;height:10px;flex:1 1 130px;background:var(--sunken);border-radius:4px;overflow:hidden;position:relative}
+.solo-fill{background:var(--c);opacity:.62}
+.solo-fill:first-child{border-radius:4px 0 0 4px}
+.solo-fill.p2{border-radius:0 4px 4px 0}
+.solo-mid{position:absolute;left:50%;top:0;bottom:0;width:0;border-left:2px solid var(--surface);opacity:.9;transform:translateX(-1px)}
+.solo-fig{display:flex;gap:12px;font-size:.8rem;color:var(--ink-2);flex:none}
+.solo-fig span{display:flex;align-items:center;gap:6px}
+.solo-fig b{font-weight:600;color:var(--ink)}
+.tlb.solo{background:transparent;box-shadow:inset 0 0 0 2px var(--c)}
 .count{color:var(--muted);font-weight:500}
 .balance{margin-top:14px;padding:22px}
 .hero{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
@@ -314,9 +326,6 @@ body{
 .saynote b{color:var(--ink-2);font-weight:600}
 .saynote select{font:inherit;font-size:.79rem;color:var(--ink);background:var(--surface);
   border:1px solid var(--line-2);border-radius:6px;padding:1px 4px}
-.orline{display:flex;align-items:center;gap:10px;margin:16px 0 4px;font-size:.68rem;font-weight:600;
-  letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
-.orline::before,.orline::after{content:"";flex:1;height:1px;background:var(--line)}
 .form{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -342,8 +351,16 @@ body{
 .entry .note{font-size:.83rem;color:var(--muted);flex:2 1 110px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .entry .acts{display:flex;gap:2px;flex:none}
 .editrow{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:12px 8px;background:var(--sunken);border-radius:9px;margin:6px 0}
-details.backup{margin-top:34px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 16px}
-details.backup > summary{cursor:pointer;padding:13px 0;font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);list-style:none}
+details.fold,details.backup{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 15px}
+details.fold{margin-top:14px}
+details.backup{margin-top:14px}
+details.fold > summary,details.backup > summary{cursor:pointer;padding:12px 0;font-size:.7rem;font-weight:600;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--muted);list-style:none;display:flex;gap:8px;align-items:baseline}
+details.fold > summary::-webkit-details-marker{display:none}
+details.fold > summary::before{content:"+";font-family:'IBM Plex Mono',monospace}
+details.fold[open] > summary::before{content:"\2013"}
+details.fold > summary em{font-style:normal;color:var(--ink-2);text-transform:none;letter-spacing:0;font-size:.78rem}
+.fold-body{padding-bottom:16px}
 details.backup > summary::-webkit-details-marker{display:none}
 details.backup > summary[data-stale="true"]{color:var(--p2)}
 .backup-when{font-weight:600}
@@ -426,7 +443,6 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     <h1>Break Ledger</h1>
     <div class="mast-meta"><span id="todayDate"></span><span class="sep"></span><span id="dayNum"></span></div>
   </header>
-  <p class="tagline" id="tagline"></p>
 
   <div class="names" id="names">
     <p class="eyebrow">Who&rsquo;s tracking</p>
@@ -456,7 +472,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       <button data-period="month" type="button">This month</button>
       <button data-period="all" type="button">All time</button>
     </div>
-    <div class="filters" id="filters">
+    <details class="fold" id="filterFold"><summary>Filters <em id="filterSum"></em></summary>
+    <div class="fold-body"><div class="filters" id="filters">
       <label class="fsel"><span>Days</span><select id="fDays">
         <option value="any">Any day</option>
         <option value="weekdays">Weekdays</option>
@@ -482,22 +499,22 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         <option value="in">In only</option>
       </select></label>
       <button class="btn btn-sm btn-quiet" type="button" id="fClear" hidden>Clear filters</button>
-    </div>
+    </div></div></details>
     <div class="panel balance" id="balance"></div>
   </section>
 
-  <section class="section" id="secWhere" hidden>
-    <p class="eyebrow">Where the time goes</p>
-    <div class="panel chart" id="where"></div>
-  </section>
-
-  <section class="section" id="secChart" hidden>
-    <p class="eyebrow">Day by day</p>
-    <div class="panel chart" id="chart"></div>
-  </section>
+  <details class="fold" id="trendFold" hidden>
+    <summary>Trends</summary>
+    <div class="fold-body">
+      <p class="eyebrow" id="whereLab" hidden>Where the time goes</p>
+      <div class="chart" id="where" hidden></div>
+      <p class="eyebrow" id="chartLab" style="margin-top:20px" hidden>Day by day</p>
+      <div class="chart" id="chart" hidden></div>
+    </div>
+  </details>
 
   <section class="section">
-    <p class="eyebrow">Log a break you forgot to time</p>
+    <p class="eyebrow">Add by voice</p>
     <div class="panel">
       <div class="say-row">
         <button class="mic" id="micBtn" type="button" hidden aria-label="Speak a break">
@@ -512,7 +529,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       </div>
       <div class="parsed" id="parsed" hidden></div>
       <p class="saynote" id="sayNote"></p>
-      <div class="orline">or fill it in</div>
+    </div>
+    <details class="fold" id="formFold"><summary>Or fill it in</summary>
+    <div class="fold-body">
       <form class="form" id="addForm">
         <div class="field">
           <label>Who</label>
@@ -526,10 +545,11 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         <div class="field"><label for="aMins">Minutes</label><input id="aMins" type="number" min="1" max="1440" step="1" value="30" required></div>
         <div class="field"><label for="aCat">Activity</label><select id="aCat"></select></div>
         <div class="field"><label for="aWhere">Where</label><select id="aWhere"><option value="in">In</option><option value="out">Out</option></select></div>
+        <div class="field"><label for="aKind">Kind</label><select id="aKind"><option value="">Break</option><option value="ashvi">Alone with Ashvi</option></select></div>
         <div class="field grow"><label for="aNote">Note (optional)</label><input id="aNote" maxlength="60" placeholder="anything worth remembering" autocomplete="off"></div>
         <button class="btn" type="submit">Add break</button>
       </form>
-    </div>
+    </div></details>
   </section>
 
   <section class="section" id="secLog" hidden>
@@ -573,14 +593,15 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
        local — this browser only, for the page opened as a file or hosted
      Everything below the adapter is written once and works on either.
      ============================================================ */
-  var BUILD = "v7 \u00b7 6 Sep 2026";
+  var BUILD = "v8 \u00b7 6 Sep 2026";
+  var CARE = "Ashvi";
   var KEY = "breakLedger.v2";
   var DEFAULT_NAMES = { a: "Yash", b: "Kratika" };
   var mode = "local", db = null, months = {}, ready = true, syncErr = "";
   var state = blank();
 
   function blank() {
-    return { names: { a: DEFAULT_NAMES.a, b: DEFAULT_NAMES.b }, entries: [], running: { a: null, b: null }, runWhere: { a: "in", b: "in" } };
+    return { names: { a: DEFAULT_NAMES.a, b: DEFAULT_NAMES.b }, entries: [], running: { a: null, b: null }, runMode: { a: "break", b: "break" } };
   }
   function num(v) { return typeof v === "number" && isFinite(v) && v > 0 ? v : null; }
   function valid(e) {
@@ -595,9 +616,19 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     { k: "walk", label: "Walk" }, { k: "gym", label: "Gym" },
     { k: "read", label: "Read" }, { k: "nap", label: "Nap" },
     { k: "social", label: "Social" }, { k: "screen", label: "Screen" },
-    { k: "food", label: "Food" }, { k: "ashvi", label: "Ashvi" },
-    { k: "together", label: "Together" }, { k: "other", label: "Other" }
+    { k: "food", label: "Food" }, { k: "other", label: "Other" }
   ];
+
+  /* Solo duty is not an activity, it is the opposite of one: time given rather
+     than time taken. It gets its own kind so the balance can keep them apart. */
+  function isSolo(e) { return !!e && e.kind === "ashvi"; }
+  function migrate(list) {
+    return list.map(function (e) {
+      if (e.cat === "ashvi") { e.kind = "ashvi"; delete e.cat; }
+      else if (e.cat === "together") { e.cat = "other"; }
+      return e;
+    });
+  }
   function catLabel(k) {
     for (var i = 0; i < CATS.length; i++) if (CATS[i].k === k) return CATS[i].label;
     return null;
@@ -612,9 +643,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         var p = JSON.parse(raw);
         if (p && typeof p === "object") {
           if (p.names && p.names.a && p.names.b) s.names = { a: String(p.names.a), b: String(p.names.b) };
-          if (Array.isArray(p.entries)) s.entries = p.entries.filter(valid);
+          if (Array.isArray(p.entries)) s.entries = migrate(p.entries.filter(valid));
           if (p.running) s.running = { a: num(p.running.a), b: num(p.running.b) };
-          if (p.runWhere) s.runWhere = { a: p.runWhere.a || "in", b: p.runWhere.b || "in" };
+          if (p.runMode) s.runMode = { a: p.runMode.a || "break", b: p.runMode.b || "break" };
         }
       }
     } catch (e) { /* private mode or blocked storage — run from memory */ }
@@ -645,7 +676,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     if (mode !== "cloud" || !db) return;
     var body = name === "people" ? { a: state.names.a, b: state.names.b }
                                  : { a: state.running.a, b: state.running.b,
-                                     aw: state.runWhere.a, bw: state.runWhere.b };
+                                     am: state.runMode.a, bm: state.runMode.b };
     db.doc("config/" + name).set(body).catch(onSyncErr);
   }
   function onSyncErr(e) {
@@ -667,14 +698,14 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     db.doc("config/running").onSnapshot(function (snap) {
       var v = snap.exists ? snap.data() : null;
       state.running = v ? { a: num(v.a), b: num(v.b) } : { a: null, b: null };
-      state.runWhere = { a: (v && v.aw) || "in", b: (v && v.bw) || "in" };
+      state.runMode = { a: (v && v.am) || "break", b: (v && v.bm) || "break" };
       renderAll();
     }, onSyncErr);
     db.collection("logs").onSnapshot(function (snap) {
       months = {};
       snap.docs.forEach(function (doc) {
         var v = doc.data() || {};
-        if (Array.isArray(v.entries)) months[doc.id] = v.entries.filter(valid);
+        if (Array.isArray(v.entries)) months[doc.id] = migrate(v.entries.filter(valid));
       });
       rebuild(); ready = true; syncErr = ""; renderAll();
     }, onSyncErr);
@@ -711,13 +742,13 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         if (months[k].length !== before) touched[k] = 1;
       });
       var nk = monthKey(next.p, next.start);
-      months[nk] = (months[nk] || []).concat([{ id: id, p: next.p, start: next.start, secs: next.secs, note: next.note, cat: next.cat, where: next.where }]);
+      months[nk] = (months[nk] || []).concat([{ id: id, p: next.p, start: next.start, secs: next.secs, note: next.note, cat: next.cat, where: next.where, kind: next.kind }]);
       touched[nk] = 1;
       rebuild(); renderAll(); Object.keys(touched).forEach(writeMonth);
     } else {
       state.entries.forEach(function (e) {
         if (e.id !== id) return;
-        e.p = next.p; e.start = next.start; e.secs = next.secs; e.note = next.note; e.cat = next.cat; e.where = next.where;
+        e.p = next.p; e.start = next.start; e.secs = next.secs; e.note = next.note; e.cat = next.cat; e.where = next.where; e.kind = next.kind;
       });
       saveLocal(); renderAll();
     }
@@ -737,7 +768,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   }
   function setRunning(p, v) {
     state.running[p] = v;
-    if (v) state.runWhere[p] = startWhere[p];
+    if (v) state.runMode[p] = startMode[p];
     if (mode === "cloud") writeConfig("running"); else saveLocal();
     renderAll();
   }
@@ -759,7 +790,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       Object.keys(seen).forEach(writeMonth);
       writeConfig("people");
     } else {
-      state = { names: next.names, entries: next.entries, running: next.running, runWhere: { a: "in", b: "in" } };
+      state = { names: next.names, entries: next.entries, running: next.running, runMode: { a: "break", b: "break" } };
       saveLocal(); renderAll();
     }
   }
@@ -837,11 +868,13 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   function keep(e) { return dayOk(e.start) && whereOk(e); }
 
   /* Filtered totals and counts, used by every panel except the live Today card. */
-  function fStat(p, from, to) {
+  /* solo: null = rest only (the fairness question), true = solo duty only */
+  function fStat(p, from, to, solo) {
     var secs = 0, n = 0;
     for (var i = 0; i < state.entries.length; i++) {
       var e = state.entries[i];
       if (e.p !== p) continue;
+      if (solo ? !isSolo(e) : isSolo(e)) continue;
       if (from && e.start < from) continue;
       if (to && e.start >= to) continue;
       if (!keep(e)) continue;
@@ -900,6 +933,17 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   /* The balance and the charts read through the filters; a live break only
      joins them when no filter could exclude it. */
   function fWithLive(p, from) { return fTotal(p, from) + (filtersOn() ? 0 : liveSecs(p, from)); }
+  /* The dial and its footer report rest, the same quantity the balance ranks.
+     Duty is not rest, so it belongs in the strip below, never in this number. */
+  function restWithLive(p, from) {
+    var t = 0;
+    for (var i = 0; i < state.entries.length; i++) {
+      var e = state.entries[i];
+      if (e.p === p && !isSolo(e) && e.start >= from) t += e.secs;
+    }
+    if (state.running[p] && state.runMode[p] !== "ashvi") t += liveSecs(p, from);
+    return t;
+  }
   function nameOf(p) { return state.names[p] || DEFAULT_NAMES[p]; }
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -920,13 +964,11 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   /* ============================ copy ============================ */
   var COPY = {
     local: {
-      tagline: "Start a timer when either of you steps away. The day fills in as it goes, and the balance keeps score.",
       foot: "Breaks are kept by this browser on this device, so stay on the same phone or tablet and the same browser. " +
             "Weeks start on Monday. Running timers survive a refresh and a screen lock — they keep counting from the moment start was pressed. " +
             "Use Backup &amp; restore before you clear browser data, or to carry the ledger to a new device."
     },
     cloud: {
-      tagline: "Start a timer when either of you steps away — the other phone sees it live. The day fills in as it goes, and the balance keeps score.",
       foot: "Both of you read and write the same ledger, so a break logged on one phone shows up on the other within seconds. " +
             "Weeks start on Monday. Running timers survive a refresh and a phone lock — they keep counting from the moment start was pressed."
     }
@@ -938,9 +980,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       esc(new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" }));
     document.getElementById("dayNum").innerHTML = "Day <b>" + dayNumber() + "</b>";
     document.getElementById("buildTag").textContent = BUILD;
-    var c = COPY[mode === "cloud" ? "cloud" : "local"];
-    document.getElementById("tagline").innerHTML = c.tagline;
-    document.getElementById("footNote").innerHTML = c.foot;
+    document.getElementById("footNote").innerHTML = COPY[mode === "cloud" ? "cloud" : "local"].foot;
   }
   function renderSync() {
     var el = document.getElementById("sync");
@@ -978,12 +1018,12 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         '" stroke-dashoffset="' + (CIRC * (1 - Math.min(1, frac))).toFixed(1) + '"/></svg>';
   }
   var tagging = null;
-  var startWhere = { a: "in", b: "in" };
+  var startMode = { a: "break", b: "break" };
   function renderTimers() {
     var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
     document.getElementById("timers").innerHTML = ["a", "b"].map(function (p) {
       var running = !!state.running[p];
-      var today = totalWithLive(p, todayStart), week = totalWithLive(p, weekStart);
+      var today = restWithLive(p, todayStart), week = restWithLive(p, weekStart);
       var shown = running ? liveSecs(p) : today;
       var s = '<div class="card ' + (p === "a" ? "p1" : "p2") + '" data-running="' + running + '">';
       s += '<div class="card-top"><span class="card-name"><span class="dot"></span>' + esc(nameOf(p)) + "</span>" +
@@ -991,12 +1031,13 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       s += '<div class="dial-wrap" data-dial="' + p + '">' + dialSvg(shown / 3600) +
            '<span class="dial-val"><span class="dial-num" data-live="' + p + '">' +
            (running ? clock(shown) : dur(today)) + '</span>' +
-           '<span class="dial-cap">' + (running ? "on a break" : "today") + "</span></span></div>";
+           '<span class="dial-cap">' + (running ? (state.runMode[p] === "ashvi" ? "on duty" : "on a break") : "today") +
+           "</span></span></div>";
       if (!running) {
-        s += '<div class="wsel" role="group" aria-label="Where the break is">' +
-          ["in", "out"].map(function (w) {
-            return '<button type="button" data-where="' + p + ":" + w + '" aria-pressed="' +
-              (startWhere[p] === w ? "true" : "false") + '">' + (w === "in" ? "In" : "Out") + "</button>";
+        s += '<div class="ksel" role="group" aria-label="What kind of time">' +
+          [["break", "Break"], ["out", "Out"], ["ashvi", "Ashvi"]].map(function (m) {
+            return '<button type="button" data-k="' + p + ":" + m[0] + '" aria-pressed="' +
+              (startMode[p] === m[0] ? "true" : "false") + '">' + m[1] + "</button>";
           }).join("") + "</div>";
       }
       s += running
@@ -1040,17 +1081,19 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
 
     function lane(p) {
       var blocks = todays.filter(function (e) { return e.p === p; }).map(function (e) {
-        return block(e.start, e.start + e.secs * 1000, p, dur(e.secs) + (e.note ? " · " + e.note : ""), false);
+        return block(e.start, e.start + e.secs * 1000, p,
+          (isSolo(e) ? "with " + CARE + " · " : "") + dur(e.secs) + (e.note ? " · " + e.note : ""), false, isSolo(e));
       }).join("");
-      if (state.running[p]) blocks += block(state.running[p], now, p, "running · " + dur(liveSecs(p)), true);
+      if (state.running[p]) blocks += block(state.running[p], now, p, "running · " + dur(liveSecs(p)), true,
+        state.runMode[p] === "ashvi");
       var empty = blocks ? "" : '<span class="tl-none">nothing yet</span>';
       return '<div class="tl-row"><span class="tl-name ' + (p === "a" ? "p1" : "p2") + '"><span class="dot"></span>' +
         esc(nameOf(p)) + '</span><div class="tl-track tl-lane ' + (p === "a" ? "p1" : "p2") + '">' +
         grid + empty + blocks + nowMark + "</div></div>";
     }
-    function block(s, e, p, tipTail, live) {
+    function block(s, e, p, tipTail, live, solo) {
       var l = Math.max(0, pct(s)), w = Math.max(0.6, pct(e) - pct(s));
-      return '<button class="tlb" type="button" data-live="' + (live ? 1 : 0) + '" style="left:' + l.toFixed(2) +
+      return '<button class="tlb' + (solo ? " solo" : "") + '" type="button" data-live="' + (live ? 1 : 0) + '" style="left:' + l.toFixed(2) +
         "%;width:" + Math.min(w, 100 - l).toFixed(2) + '%" data-tip="' +
         esc(nameOf(p) + " · " + timeOfDay(s) + " · " + tipTail) + '" aria-label="' +
         esc(nameOf(p) + " break at " + timeOfDay(s) + ", " + tipTail) + '"></button>';
@@ -1069,15 +1112,15 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
     ["a", "b"].forEach(function (p) {
       var running = !!state.running[p];
-      var shown = running ? liveSecs(p) : totalWithLive(p, todayStart);
+      var shown = running ? liveSecs(p) : restWithLive(p, todayStart);
       var live = document.querySelector('[data-live="' + p + '"]');
       if (live && running) live.textContent = clock(shown);
       var arc = document.querySelector('[data-dial="' + p + '"] .dial-arc');
       if (arc) arc.setAttribute("stroke-dashoffset", (CIRC * (1 - Math.min(1, shown / 3600))).toFixed(1));
       var t = document.querySelector('[data-today="' + p + '"]');
-      if (t) t.textContent = dur(totalWithLive(p, todayStart));
+      if (t) t.textContent = dur(restWithLive(p, todayStart));
       var w = document.querySelector('[data-week="' + p + '"]');
-      if (w) w.textContent = dur(totalWithLive(p, weekStart));
+      if (w) w.textContent = dur(restWithLive(p, weekStart));
     });
     renderTimeline(); renderBalance();
   }
@@ -1099,7 +1142,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         '<div class="hero"><span class="hero-name">' + (words ? "Nothing matches" : "Nothing logged yet") + "</span></div>" +
         '<div class="beam"><div class="beam-empty">no break time ' + esc(label) + "</div></div>" +
         '<div class="fulcrum"></div>' +
-        '<p class="fulcrum-note">Press a timer above when either of you steps away, or add a break by hand below.</p>';
+        '<p class="fulcrum-note">Press a timer above when either of you steps away.</p>';
+      html += soloStrip(from);
       el.innerHTML = html;
       return;
     }
@@ -1130,8 +1174,26 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         '</b> <span class="count">&times;' + sa.n + '</span> <span class="pct">' + Math.round(pa) + "%</span></span>" +
       '<span class="legend-item"><span class="pct">' + Math.round(100 - pa) + '%</span> <span class="count">&times;' +
         sb.n + '</span> <b>' + dur(b) + "</b> " + esc(nameOf("b")) + '<span class="dot p2"></span></span></div>';
-    html += '<p class="fulcrum-note">The centre line is an even split — ' + dur(total / 2) + " each of " + dur(total) + " total.</p>";
+    html += '<p class="fulcrum-note">The centre line is an even split — ' + dur(total / 2) + " each of " +
+      dur(total) + " total, over " + (sa.n + sb.n) + " break" + (sa.n + sb.n === 1 ? "" : "s") +
+      (window_() ? ". Only the minutes inside the chosen hours are counted." : ".") + "</p>";
+    html += soloStrip(from);
     el.innerHTML = html;
+  }
+
+  /* Time on duty alone is the mirror of time off: someone can be behind on
+     rest and ahead on duty at once, and one beam cannot say both. */
+  function soloStrip(from) {
+    var a = fStat("a", from, null, true), b = fStat("b", from, null, true);
+    var total = a.secs + b.secs;
+    if (!total) return "";
+    var pa = (a.secs / total) * 100;
+    return '<div class="solo-strip"><span class="solo-lab">Alone with ' + esc(CARE) + "</span>" +
+      '<span class="solo-beam"><span class="solo-fill p1" style="width:' + pa.toFixed(2) + '%"></span>' +
+      '<span class="solo-fill p2" style="width:' + (100 - pa).toFixed(2) + '%"></span>' +
+      '<span class="solo-mid"></span></span>' +
+      '<span class="solo-fig"><span><span class="dot p1"></span><b>' + dur(a.secs) + "</b> &times;" + a.n + "</span>" +
+      '<span><span class="dot p2"></span><b>' + dur(b.secs) + "</b> &times;" + b.n + "</span></span></div>";
   }
 
   /* ---- diverging day chart ---- */
@@ -1191,6 +1253,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var tally = {}, max = 0, anyUntagged = false;
     state.entries.forEach(function (e) {
       if (from && e.start < from) return;
+      if (isSolo(e)) return;                 /* duty has no activity to break down */
       if (!keep(e)) return;
       var c = clipped(e);
       if (c <= 0) return;
@@ -1247,8 +1310,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
      "Kratika 40 minute walk out at 5pm" -> a complete entry.
      ============================================================ */
   var SYN = [
-    ["ashvi",    /\b(ashvi|baby|kid|child|childcare|nappy|feed(ing)?)\b/],
-    ["together", /\b(together|both of us|with each other|date)\b/],
+
     ["gym",      /\b(gym|workout|work out|exercise|run|running|jog|cycle|cycling|yoga|swim)\b/],
     ["walk",     /\b(walk|walking|walked|stroll|outside for a bit)\b/],
     ["read",     /\b(read|reading|book|study|studying)\b/],
@@ -1260,7 +1322,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
 
   function parseSpoken(raw) {
     var t = " " + String(raw || "").toLowerCase().replace(/[,.!?]/g, " ").replace(/\s+/g, " ") + " ";
-    var out = { who: null, secs: null, cat: null, where: null, start: null, said: String(raw || "").trim() };
+    var out = { who: null, secs: null, cat: null, where: null, kind: null, start: null, said: String(raw || "").trim() };
 
     /* who — their own names first, then the obvious stand-ins */
     ["a", "b"].forEach(function (p) {
@@ -1289,8 +1351,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     if (/\b(out|outside|away|went out|off out)\b/.test(t)) out.where = "out";
     else if (/\b(in|indoors|inside|at home|home)\b/.test(t)) out.where = "in";
 
-    /* what */
-    for (var i = 0; i < SYN.length; i++) if (SYN[i][1].test(t)) { out.cat = SYN[i][0]; break; }
+    /* on duty alone, or off duty */
+    if (/\b(ashvi|baby|kid|child|childcare|nappy|solo|alone with)\b/.test(t)) out.kind = "ashvi";
+    else for (var i = 0; i < SYN.length; i++) if (SYN[i][1].test(t)) { out.cat = SYN[i][0]; break; }
 
     /* when — a clock time wins, then a rough part of day, else it just ended */
     var day = new Date(); day.setHours(0, 0, 0, 0);
@@ -1345,7 +1408,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     return '<div class="entry"><span class="when">' + esc(timeOfDay(e.start)) + "&ndash;" +
       esc(timeOfDay(e.start + e.secs * 1000)) + '</span><span class="who-tag ' + (e.p === "a" ? "p1" : "p2") +
       '"><span class="dot"></span><span>' + esc(nameOf(e.p)) + '</span></span><span class="dur">' + dur(e.secs) +
-      "</span>" + (e.where === "out" ? '<span class="tag-cat">Out</span>' : "") +
+      "</span>" + (isSolo(e) ? '<span class="tag-cat">' + esc(CARE) + "</span>" : "") +
+      (e.where === "out" ? '<span class="tag-cat">Out</span>' : "") +
       (catLabel(e.cat) ? '<span class="tag-cat">' + esc(catLabel(e.cat)) + "</span>" : "") +
       '<span class="note">' + esc(e.note || "") + '</span><span class="acts">' +
       '<button class="btn btn-sm btn-quiet" type="button" data-edit="' + esc(e.id) + '">Edit</button>' +
@@ -1371,6 +1435,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       '<div class="field"><label for="eWhere">Where</label><select id="eWhere">' +
         '<option value="in"' + (e.where !== "out" ? " selected" : "") + ">In</option>" +
         '<option value="out"' + (e.where === "out" ? " selected" : "") + ">Out</option></select></div>" +
+      '<div class="field"><label for="eKind">Kind</label><select id="eKind">' +
+        '<option value=""' + (!isSolo(e) ? " selected" : "") + ">Break</option>" +
+        '<option value="ashvi"' + (isSolo(e) ? " selected" : "") + ">Alone with " + esc(CARE) + "</option></select></div>" +
       '<div class="field grow"><label for="eNote">Note</label><input id="eNote" maxlength="60" value="' + esc(e.note || "") + '"></div>' +
       '<button class="btn btn-sm" type="button" data-save="' + esc(e.id) + '">Save</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-cancel="1">Cancel</button></div>';
@@ -1381,11 +1448,17 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   function renderAll() {
     renderHead(); renderSync(); renderNames(); renderTabs();
     renderTimers(); renderTimeline(); renderBalance();
-    document.getElementById("secWhere").hidden = !(ready && state.entries.length > 0);
-    if (!document.getElementById("secWhere").hidden) renderWhere();
-    document.getElementById("secChart").hidden = !(ready && distinctDays() >= 2);
+    var showWhere = ready && state.entries.some(function (e) { return !isSolo(e); });
+    var showChart = ready && distinctDays() >= 2;
+    document.getElementById("whereLab").hidden = !showWhere;
+    document.getElementById("where").hidden = !showWhere;
+    document.getElementById("chartLab").hidden = !showChart;
+    document.getElementById("chart").hidden = !showChart;
+    document.getElementById("trendFold").hidden = !(showWhere || showChart);
+    document.getElementById("filterSum").textContent = filtersOn() ? filterWords() : "";
     document.getElementById("secLog").hidden = !(ready && state.entries.length > 0);
-    if (!document.getElementById("secChart").hidden) renderChart();
+    if (showWhere) renderWhere();
+    if (showChart) renderChart();
     if (!document.getElementById("secLog").hidden) renderLog();
     if (!document.querySelector("details.backup").open) document.getElementById("blob").value = snapshotJson();
     renderBackupState();
@@ -1397,10 +1470,10 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   /* ============================ actions ============================ */
   document.getElementById("timers").addEventListener("click", function (ev) {
     var s = ev.target.closest("[data-start]"), t = ev.target.closest("[data-stop]");
-    var wsel = ev.target.closest("[data-where]");
-    if (wsel) {
-      var parts = wsel.getAttribute("data-where").split(":");
-      startWhere[parts[0]] = parts[1];
+    var ksel = ev.target.closest("[data-k]");
+    if (ksel) {
+      var parts = ksel.getAttribute("data-k").split(":");
+      startMode[parts[0]] = parts[1];
       renderTimers();
       return;
     }
@@ -1422,7 +1495,10 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         var id = newId();
         tagging = { id: id, p: q };
         setRunning(q, null);
-        addEntry({ id: id, p: q, start: began, secs: secs, note: "", where: state.runWhere[q] || "in" });
+        var m = state.runMode[q] || "break";
+        if (m === "ashvi") tagging = null;      /* duty has no activity to pick */
+        addEntry({ id: id, p: q, start: began, secs: secs, note: "",
+          where: m === "out" ? "out" : "in", kind: m === "ashvi" ? "ashvi" : undefined });
       } else {
         setRunning(q, null);
       }
@@ -1500,7 +1576,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     bits.push(heard.secs
       ? '<span class="pchip">' + dur(heard.secs) + "</span>"
       : '<span class="pchip miss">how long?</span>');
-    bits.push('<span class="pchip">' + esc(catLabel(heard.cat) || "untagged") + "</span>");
+    bits.push('<span class="pchip">' + (heard.kind === "ashvi" ? "alone with " + esc(CARE)
+      : esc(catLabel(heard.cat) || "untagged")) + "</span>");
     bits.push('<span class="pchip">' + (heard.where === "out" ? "out" : "in") + "</span>");
     if (heard.start) bits.push('<span class="pchip">' + esc(dayLabel(heard.start).toLowerCase() + " " + timeOfDay(heard.start)) + "</span>");
     box.innerHTML = bits.join("");
@@ -1519,7 +1596,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     if (!heard) { document.getElementById("sayNote").textContent = "Say or type something first."; return; }
     if (!heard.who || !heard.secs) { renderParsed(); return; }
     addEntry({ id: newId(), p: heard.who, start: heard.start || Date.now() - heard.secs * 1000,
-      secs: heard.secs, cat: heard.cat || undefined, where: heard.where || "in", note: "" });
+      secs: heard.secs, cat: heard.cat || undefined, where: heard.where || "in",
+      kind: heard.kind || undefined, note: "" });
     heard = null;
     document.getElementById("sayIn").value = "";
     renderParsed();
@@ -1604,6 +1682,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       start: new Date(+d[0], +d[1] - 1, +d[2], +hm[0], +hm[1], 0, 0).getTime(),
       secs: mins * 60, cat: document.getElementById("aCat").value || undefined,
       where: document.getElementById("aWhere").value,
+      kind: document.getElementById("aKind").value || undefined,
       note: document.getElementById("aNote").value.trim().slice(0, 60) });
     document.getElementById("aNote").value = "";
   });
@@ -1625,6 +1704,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
           start: new Date(+pp[0], +pp[1] - 1, +pp[2], +hh[0], +hh[1], 0, 0).getTime(),
           secs: mv * 60, cat: document.getElementById("eCat").value || undefined,
           where: document.getElementById("eWhere").value || undefined,
+          kind: document.getElementById("eKind").value || undefined,
           note: document.getElementById("eNote").value.trim().slice(0, 60) });
       } else renderLog();
     }
@@ -1736,7 +1816,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       ? "Replace the shared ledger for both of you with this backup?"
       : "Replace everything in this app with this backup?")) return;
     var entries = parsed.entries.filter(valid).map(function (e) {
-      return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "", cat: e.cat, where: e.where };
+      return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "", cat: e.cat, where: e.where, kind: e.kind };
     });
     replaceAll({
       names: (parsed.names && parsed.names.a && parsed.names.b)

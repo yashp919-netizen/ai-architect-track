@@ -289,6 +289,8 @@ body{
 details.backup{margin-top:34px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 16px}
 details.backup > summary{cursor:pointer;padding:13px 0;font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);list-style:none}
 details.backup > summary::-webkit-details-marker{display:none}
+details.backup > summary[data-stale="true"]{color:var(--p2)}
+.backup-when{font-weight:600}
 details.backup > summary::before{content:"+ ";font-family:'IBM Plex Mono',monospace}
 details.backup[open] > summary::before{content:"– "}
 .backup-body{padding-bottom:16px;display:flex;flex-direction:column;gap:10px}
@@ -424,11 +426,12 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   </section>
 
   <details class="backup">
-    <summary>Backup &amp; restore</summary>
+    <summary id="bSummary">Backup &amp; restore</summary>
     <div class="backup-body">
-      <p>Copy the text below somewhere safe to keep a snapshot of every break, or paste an older one back in to restore it. Worth doing before you clear browser data, or when moving to a new phone.</p>
+      <p id="bIntro"></p>
       <textarea id="blob" spellcheck="false" aria-label="Backup data"></textarea>
       <div class="rowbtns">
+        <button class="btn btn-sm" id="bSave" type="button" hidden>Save backup&hellip;</button>
         <button class="btn btn-sm" id="bCopy" type="button">Copy backup</button>
         <button class="btn btn-sm" id="bRestore" type="button">Restore from pasted text</button>
         <button class="btn btn-sm btn-quiet" id="bReset" type="button">Erase everything</button>
@@ -985,6 +988,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     if (!document.getElementById("secChart").hidden) renderChart();
     if (!document.getElementById("secLog").hidden) renderLog();
     if (!document.querySelector("details.backup").open) document.getElementById("blob").value = snapshotJson();
+    renderBackupState();
   }
   function snapshotJson() {
     return JSON.stringify({ names: state.names, entries: state.entries, running: state.running }, null, 2);
@@ -1079,8 +1083,71 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   document.addEventListener("focusout", hideTip);
   window.addEventListener("scroll", hideTip, { passive: true });
 
-  /* --- backup & restore --- */
+  /* --- backup & restore ---
+     On a phone the share sheet is the difference between a backup that happens
+     and one that does not: it hands the file straight to Files, Notes or Mail
+     in one tap. Copy-to-clipboard stays as the fallback for desktop and for
+     browsers without the share API. */
   var say = document.getElementById("bSay");
+  var LAST = "breakLedger.lastBackup";
+
+  function lastBackup() {
+    try { var v = +window.localStorage.getItem(LAST); return v > 0 ? v : null; } catch (e) { return null; }
+  }
+  function markBackedUp() {
+    try { window.localStorage.setItem(LAST, String(Date.now())); } catch (e) {}
+    renderBackupState();
+  }
+  function renderBackupState() {
+    var sum = document.getElementById("bSummary");
+    var intro = document.getElementById("bIntro");
+    if (!sum || !intro) return;
+    var t = lastBackup(), n = state.entries.length;
+    var days = t === null ? null : Math.floor((startOfDay(Date.now()) - startOfDay(t)) / DAY);
+    var when = t === null ? "never backed up"
+             : days <= 0 ? "backed up today"
+             : days === 1 ? "backed up yesterday"
+             : "backed up " + days + " days ago";
+    /* Only nag once there is something worth losing. */
+    var stale = n > 0 && (t === null || days >= 7);
+    sum.innerHTML = "Backup &amp; restore &mdash; <span class=\"backup-when\">" + when + "</span>";
+    sum.setAttribute("data-stale", String(stale));
+    intro.innerHTML = mode === "cloud"
+      ? "Save a snapshot of every break somewhere safe, or paste an older one back in to restore it. Restoring replaces the shared ledger for both of you."
+      : "These breaks live only in this app on this phone. Nothing else has a copy, so save one somewhere safe &mdash; " +
+        "Files, Notes, or an email to yourself. Clearing browser data, or losing the phone, loses everything not backed up.";
+  }
+
+  function backupText() { return snapshotJson(); }
+  function backupName() { return "break-ledger-" + dayKey(Date.now()) + ".txt"; }
+
+  var canShare = false;
+  try { canShare = typeof navigator.share === "function"; } catch (e) {}
+  if (canShare) document.getElementById("bSave").hidden = false;
+
+  document.getElementById("bSave").addEventListener("click", function () {
+    var text = backupText();
+    say.textContent = "";
+    function viaText() {
+      navigator.share({ title: "Break Ledger backup", text: text }).then(markBackedUp, function () {});
+    }
+    try {
+      if (navigator.canShare) {
+        var file = new File([text], backupName(), { type: "text/plain" });
+        if (navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: "Break Ledger backup" }).then(markBackedUp, function (err) {
+            /* A cancelled share is not a failure; anything else falls back to text. */
+            if (err && err.name !== "AbortError") viaText();
+          });
+          return;
+        }
+      }
+      viaText();
+    } catch (e) {
+      say.textContent = "Sharing is not available here — use Copy backup instead.";
+    }
+  });
+
   document.querySelector("details.backup").addEventListener("toggle", function () {
     if (this.open) document.getElementById("blob").value = snapshotJson();
   });
@@ -1089,7 +1156,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     ta.value = snapshotJson(); ta.select();
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(ta.value).then(
-        function () { say.textContent = "Backup copied to your clipboard."; },
+        function () { say.textContent = "Backup copied. Paste it somewhere that is not this phone."; markBackedUp(); },
         function () { say.textContent = "Copy blocked here — the text is selected, press Ctrl/Cmd+C."; });
     } else say.textContent = "The text is selected — press Ctrl/Cmd+C to copy it.";
   });
@@ -1100,7 +1167,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     try { parsed = JSON.parse(txt); }
     catch (e) { say.textContent = "That is not readable backup text — paste the whole thing, braces included."; return; }
     if (!parsed || !Array.isArray(parsed.entries)) { say.textContent = "That backup has no breaks in it. Nothing was changed."; return; }
-    if (mode === "cloud" && !window.confirm("Replace the shared ledger for both of you with this backup?")) return;
+    if (!window.confirm(mode === "cloud"
+      ? "Replace the shared ledger for both of you with this backup?"
+      : "Replace everything in this app with this backup?")) return;
     var entries = parsed.entries.filter(valid).map(function (e) {
       return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "" };
     });

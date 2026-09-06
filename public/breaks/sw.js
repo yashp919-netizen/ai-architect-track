@@ -1,7 +1,7 @@
 /* Break Ledger offline shell.
    Scoped to this folder by where it is served from, so nothing else on the
    domain is intercepted. Bump CACHE to force a refresh of the cached shell. */
-var CACHE = "break-ledger-v4";
+var CACHE = "break-ledger-v5";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
 self.addEventListener("install", function (ev) {
@@ -30,9 +30,14 @@ self.addEventListener("fetch", function (ev) {
 
   /* The page itself: network first, so an update lands as soon as there is a
      connection, with the cached copy as the offline fallback. */
+  if (url.pathname.indexOf("version.json") !== -1) {
+    ev.respondWith(fetch(req, { cache: "no-store" }));
+    return;
+  }
+
   if (req.mode === "navigate") {
     ev.respondWith(
-      fetch(req)
+      fetch(req, { cache: "reload" })
         .then(function (res) {
           var copy = res.clone();
           caches.open(CACHE).then(function (c) { c.put("./index.html", copy); }).catch(function () {});

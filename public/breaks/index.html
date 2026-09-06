@@ -15,7 +15,7 @@
 <meta name="theme-color" content="#131218" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<link id="webfonts" rel="stylesheet" media="print" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
 <style>
 /* ---------- tokens: light is the base, both dark states re-declare ---------- */
 :root{
@@ -143,6 +143,13 @@ body{
 .sync[data-mode="cloud"] .dot{--c:var(--p1);animation:pulse 2.4s ease-in-out infinite}
 .sync[data-mode="stalled"] .dot{--c:var(--p2)}
 
+.update{
+  display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:16px;padding:12px 14px;
+  border:1px solid var(--p1);border-radius:var(--radius);background:var(--p1-wash);
+  font-size:.88rem;color:var(--ink);
+}
+.update p{margin:0;flex:1 1 200px}
+.update b{font-weight:700}
 .hint{
   display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-top:16px;padding:11px 13px;
   border:1px dashed var(--line-2);border-radius:var(--radius);background:var(--surface);
@@ -311,7 +318,7 @@ details.backup[open] > summary::before{content:"– "}
 textarea#blob{font-family:'IBM Plex Mono',monospace;font-size:.74rem;line-height:1.5;width:100%;height:130px;resize:vertical;color:var(--ink-2);background:var(--sunken);border:1px solid var(--line);border-radius:9px;padding:10px}
 .rowbtns{display:flex;flex-wrap:wrap;gap:8px}
 .say{font-size:.82rem;color:var(--muted);min-height:1.2em}
-.build{display:block;margin-top:10px;font-size:.7rem;letter-spacing:.06em;color:var(--line-2);font-family:'IBM Plex Mono',monospace}
+.build{display:block;margin-top:10px;font-size:.72rem;letter-spacing:.06em;color:var(--muted);font-family:'IBM Plex Mono',monospace}
 footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65;border-top:1px solid var(--line);padding-top:14px}
 
 @media (max-width:600px){
@@ -391,6 +398,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     <span class="sync" id="sync"></span>
   </div>
 
+  <div id="updateBar" hidden></div>
   <div id="installHint" hidden></div>
 
   <section class="section">
@@ -470,13 +478,21 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
 (function () {
   "use strict";
 
+  /* The webfont sheet is requested as media="print" so it can never block
+     parsing or this script. Nothing about the app should wait on a font, least
+     of all an app that is supposed to open with no connection. */
+  (function fonts() {
+    var l = document.getElementById("webfonts");
+    if (l) l.media = "all";
+  })();
+
   /* ============================================================
      Storage sits behind one adapter with two backends:
        cloud — the artifact's shared store, so both phones see one ledger
        local — this browser only, for the page opened as a file or hosted
      Everything below the adapter is written once and works on either.
      ============================================================ */
-  var BUILD = "v4 \u00b7 6 Sep 2026";
+  var BUILD = "v5 \u00b7 6 Sep 2026";
   var KEY = "breakLedger.v2";
   var DEFAULT_NAMES = { a: "Yash", b: "Kratika" };
   var mode = "local", db = null, months = {}, ready = true, syncErr = "";
@@ -1377,7 +1393,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var checkUpdate = function () {
       if (!navigator.serviceWorker.getRegistration) return;
       navigator.serviceWorker.getRegistration()
-        .then(function (r) { if (r && r.update) r.update(); })
+        .then(function (r) { return r && r.update ? r.update() : null; })
         .catch(function () {});
     };
     window.addEventListener("load", function () {
@@ -1385,6 +1401,50 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     });
     document.addEventListener("visibilitychange", function () { if (!document.hidden) checkUpdate(); });
   }
+
+  /* An installed app can sit on a stale copy however well the worker is
+     written, so the page asks a tiny uncached file what the current build is
+     and offers a button that clears everything and reloads. This is the only
+     update path that does not depend on the cache behaving. */
+  function checkVersion() {
+    if (framed) return;
+    fetch("version.json?t=" + Date.now(), { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) {
+        if (!v || !v.build || v.build === BUILD) return;
+        var bar = document.getElementById("updateBar");
+        bar.hidden = false;
+        bar.innerHTML = '<div class="update"><p><b>A new version is ready.</b> You are on ' + esc(BUILD) +
+          ", the current one is " + esc(v.build) + '. Your breaks are not affected.</p>' +
+          '<button class="btn btn-sm" type="button" id="doUpdate">Update now</button></div>';
+      })
+      .catch(function () { /* offline: nothing to say */ });
+  }
+  document.addEventListener("click", function (ev) {
+    if (!ev.target.closest("#doUpdate")) return;
+    var btn = ev.target.closest("#doUpdate");
+    btn.textContent = "Updating\u2026";
+    btn.disabled = true;
+    var jobs = [];
+    try {
+      if (window.caches && caches.keys) {
+        jobs.push(caches.keys().then(function (ks) {
+          return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+        }));
+      }
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+          return Promise.all(rs.map(function (r) { return r.unregister(); }));
+        }));
+      }
+    } catch (e) {}
+    Promise.all(jobs).catch(function () {}).then(function () {
+      /* A new query string defeats any cache still holding the old document. */
+      location.replace(location.pathname + "?u=" + Date.now());
+    });
+  });
+  checkVersion();
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) checkVersion(); });
 
   /* Adding to the home screen is a Safari menu item, not something the page can
      trigger, so the most a page can honestly do is say where the button is. */

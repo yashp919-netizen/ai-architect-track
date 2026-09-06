@@ -311,6 +311,7 @@ details.backup[open] > summary::before{content:"– "}
 textarea#blob{font-family:'IBM Plex Mono',monospace;font-size:.74rem;line-height:1.5;width:100%;height:130px;resize:vertical;color:var(--ink-2);background:var(--sunken);border:1px solid var(--line);border-radius:9px;padding:10px}
 .rowbtns{display:flex;flex-wrap:wrap;gap:8px}
 .say{font-size:.82rem;color:var(--muted);min-height:1.2em}
+.build{display:block;margin-top:10px;font-size:.7rem;letter-spacing:.06em;color:var(--line-2);font-family:'IBM Plex Mono',monospace}
 footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65;border-top:1px solid var(--line);padding-top:14px}
 
 @media (max-width:600px){
@@ -462,7 +463,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     </div>
   </details>
 
-  <footer class="foot"><span id="footNote"></span></footer>
+  <footer class="foot"><span id="footNote"></span><span class="build" id="buildTag"></span></footer>
 </div>
 <div id="tip" role="status" aria-live="polite"></div>
 <script>
@@ -475,6 +476,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
        local — this browser only, for the page opened as a file or hosted
      Everything below the adapter is written once and works on either.
      ============================================================ */
+  var BUILD = "v4 \u00b7 6 Sep 2026";
   var KEY = "breakLedger.v2";
   var DEFAULT_NAMES = { a: "Yash", b: "Kratika" };
   var mode = "local", db = null, months = {}, ready = true, syncErr = "";
@@ -757,6 +759,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     document.getElementById("todayDate").innerHTML =
       esc(new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" }));
     document.getElementById("dayNum").innerHTML = "Day <b>" + dayNumber() + "</b>";
+    document.getElementById("buildTag").textContent = BUILD;
     var c = COPY[mode === "cloud" ? "cloud" : "local"];
     document.getElementById("tagline").innerHTML = c.tagline;
     document.getElementById("footNote").innerHTML = c.foot;
@@ -1361,9 +1364,26 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
      anything else served from the same domain. */
   if (!framed && "serviceWorker" in navigator &&
       (location.protocol === "https:" || location.hostname === "localhost")) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").catch(function () { /* offline support is optional */ });
+    /* An installed app can sit on a cached copy for a long time. Ask for a
+       fresh worker on every launch and whenever it comes back to the
+       foreground, then reload once the new one takes over — timers are stored
+       as timestamps, so a reload never loses a running break. */
+    var hadController = !!navigator.serviceWorker.controller, reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (!hadController || reloading) return;   /* first install is not an update */
+      reloading = true;
+      location.reload();
     });
+    var checkUpdate = function () {
+      if (!navigator.serviceWorker.getRegistration) return;
+      navigator.serviceWorker.getRegistration()
+        .then(function (r) { if (r && r.update) r.update(); })
+        .catch(function () {});
+    };
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").then(checkUpdate, function () {});
+    });
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) checkUpdate(); });
   }
 
   /* Adding to the home screen is a Safari menu item, not something the page can

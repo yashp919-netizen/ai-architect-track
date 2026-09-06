@@ -38,6 +38,13 @@ update button.
   on the week-on-week change in that average, never on one weigh-in, so the app
   computes it and reads back the plan's own adjustment rule for the phase you are
   in. It refuses to give a verdict on fewer than four readings in either week.
+- **A session is marked done or skipped**, separately from the sets — you can
+  train without logging a single load, and a skipped day is a fact worth keeping
+  rather than an absence to guess at later. A strip under the card shows the
+  Monday-to-Sunday week at a glance, past days can be marked from the Log tab,
+  and skipping quotes the plan's own words for that day: Monday and Thursday are
+  the two never to drop, Friday merges into Tuesday, sore legs drop the squat to
+  RPE 7 rather than skipping Wednesday.
 - **Set logging** carries loads forward: once every set of a lift reaches the top
   of its rep range, the next session says to add weight and reset to the bottom.
 - **Storage:** everything lives in that browser's local storage. Use the Backup &

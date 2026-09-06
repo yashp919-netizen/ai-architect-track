@@ -262,6 +262,33 @@ body{
 .set.on .tick{color:var(--acc)}
 .set .tick svg{width:17px;height:17px}
 .sess-foot{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.mark{display:flex;gap:7px;flex-wrap:wrap}
+.mark button{
+  appearance:none;display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:.85rem;font-weight:500;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);
+  padding:8px 14px;border-radius:999px;cursor:pointer;transition:background .14s,border-color .14s,color .14s;
+}
+.mark button:hover{background:var(--sunken)}
+.mark button[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-wash);color:var(--acc);font-weight:600}
+.mark button.skip[aria-pressed="true"]{border-color:var(--warn);background:var(--warn-wash);color:var(--warn)}
+.mark button svg{width:15px;height:15px;flex:none}
+.skipnote{
+  flex:1 1 100%;margin:2px 0 0;font-size:.8rem;color:var(--warn);
+  background:var(--warn-wash);border-radius:9px;padding:9px 11px;
+}
+.week{display:flex;gap:5px;margin-top:12px}
+.week .wd{
+  flex:1 1 0;min-width:0;text-align:center;border:1px solid var(--line);border-radius:9px;
+  background:var(--surface);padding:7px 2px 6px;
+}
+.week .wd .l{font-size:.62rem;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.week .wd .m{font-size:.95rem;line-height:1.1;margin-top:3px;color:var(--line-2)}
+.week .wd.done{border-color:var(--acc);background:var(--acc-wash)}
+.week .wd.done .m,.week .wd.done .l{color:var(--acc)}
+.week .wd.skipped{border-color:var(--warn);background:var(--warn-wash)}
+.week .wd.skipped .m,.week .wd.skipped .l{color:var(--warn)}
+.week .wd.rest .m{color:var(--line-2)}
+.week .wd.today{box-shadow:0 0 0 2px var(--acc) inset}
 .sess-foot .done-note{font-size:.83rem;color:var(--acc);font-weight:600}
 .sess-note{
   font:inherit;font-size:.85rem;flex:1 1 160px;min-width:0;padding:8px 10px;
@@ -385,6 +412,7 @@ body{
 .dayrow .dchips{display:flex;gap:4px;flex-wrap:wrap}
 .chip{font-size:.66rem;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--sunken);color:var(--muted)}
 .chip.ok{background:var(--acc-wash);color:var(--acc)}
+.chip.miss{background:var(--warn-wash);color:var(--warn)}
 .empty-note{margin:0;font-size:.85rem;color:var(--muted);text-align:center;padding:18px 6px}
 
 /* ---------- update, hint, backup, footer ---------- */
@@ -491,6 +519,7 @@ textarea#blob{
     <section class="section">
       <p class="eyebrow">Today&rsquo;s session</p>
       <div class="panel" id="session"></div>
+      <div class="week" id="week"></div>
     </section>
 
     <section class="section">
@@ -565,8 +594,12 @@ textarea#blob{
           <div class="f"><label for="eSh">Shoulders, cm</label><input id="eSh" type="number" inputmode="decimal" step="0.1" min="60" max="200" placeholder="---.-"></div>
           <button class="btn" id="eSave" type="button">Save</button>
         </div>
-        <p class="lede" style="margin:11px 0 0">Backfilling a missed morning is the point of this box. Leaving a
-          field empty clears it for that day.</p>
+        <div class="mark" id="eMark" style="margin-top:13px">
+          <button type="button" data-emark="done" aria-pressed="false">Session done</button>
+          <button class="skip" type="button" data-emark="skipped" aria-pressed="false">Session skipped</button>
+        </div>
+        <p class="lede" style="margin:11px 0 0" id="eMarkNote">Backfilling a missed morning is the point of this box.
+          Leaving a measurement empty clears it for that day; the two session buttons save as soon as you tap them.</p>
       </div>
     </section>
     <section class="section">
@@ -605,7 +638,7 @@ textarea#blob{
     if (l) l.media = "all";
   })();
 
-  var BUILD = "v3 · 6 Sep 2026";
+  var BUILD = "v4 · 6 Sep 2026";
   var KEY = "theShred.v1";
 
   /* ============================================================
@@ -701,7 +734,7 @@ textarea#blob{
       ]
     },
     0: {
-      key: "sun", title: "Full rest", sets: 0, gym: false, pickle: "no",
+      key: "sun", title: "Full rest", sets: 0, gym: false, pickle: "no", rest: true,
       note: "Complete stop. With five gym sessions and three games a week, Sunday is doing real recovery work.",
       ex: [
         { id: "walk", name: "Easy walk, if you want one", sets: 1, hold: "20–30 min", nonset: true }
@@ -891,7 +924,7 @@ textarea#blob{
   /* A session: for each exercise, one slot per prescribed set holding the
      weight and reps actually done. An empty slot is a set not yet performed. */
   function cleanSession(v) {
-    var s = { sets: {}, note: "", pickle: false };
+    var s = { sets: {}, note: "", pickle: false, status: "" };
     if (!v || typeof v !== "object") return s;
     if (v.sets && typeof v.sets === "object") {
       Object.keys(v.sets).forEach(function (id) {
@@ -911,11 +944,15 @@ textarea#blob{
     }
     s.note = typeof v.note === "string" ? v.note.slice(0, 140) : "";
     s.pickle = !!v.pickle;
+    /* Whether the day happened at all. Separate from the sets: you can train
+       without logging a single load, and a skipped day is a fact worth keeping
+       rather than an absence to be guessed at later. */
+    s.status = (v.status === "done" || v.status === "skipped") ? v.status : "";
     return s;
   }
   function sessionHasContent(s) {
     if (!s) return false;
-    if (s.note || s.pickle) return true;
+    if (s.note || s.pickle || s.status) return true;
     var any = false;
     Object.keys(s.sets).forEach(function (id) {
       (s.sets[id] || []).forEach(function (x) { if (x) any = true; });
@@ -1209,6 +1246,7 @@ textarea#blob{
   }
 
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"/></svg>';
+  var CROSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
   function renderHead() {
     var t = todayKey(), ph = phaseOf(t);
@@ -1356,17 +1394,59 @@ textarea#blob{
     });
 
     html += '<div class="sess-foot">' +
+      (day.rest ? "" :
+        '<span class="mark"><button type="button" data-mark="done" aria-pressed="' + (log.status === "done" ? "true" : "false") + '">' +
+        TICK + "Done</button>" +
+        '<button class="skip" type="button" data-mark="skipped" aria-pressed="' + (log.status === "skipped" ? "true" : "false") + '">' +
+        CROSS + "Skipped</button></span>") +
       (day.pickle === "optional"
         ? '<button class="chk" id="pickleChk" type="button" aria-pressed="' + (log.pickle ? "true" : "false") + '">' +
           '<span class="box">' + TICK + "</span>Pickleball played</button>"
         : "") +
       '<input class="sess-note" id="sessNote" maxlength="140" placeholder="How did it go?" value="' + esc(log.note) + '" aria-label="Session note">' +
-      '<span class="done-note">' + (day.gym && totalSets ? doneSets + " / " + totalSets + " sets" : "") + "</span></div>";
+      '<span class="done-note">' + (day.gym && totalSets ? doneSets + " / " + totalSets + " sets" : "") + "</span>" +
+      '<p class="skipnote" id="skipNote"' + (log.status === "skipped" ? "" : " hidden") + ">" + esc(skipAdvice(t)) + "</p>" +
+      "</div>";
 
     $("session").innerHTML = html;
+    renderWeek();
   }
+  /* The plan has two things to say about a missed session, and which one applies
+     depends on the day. Better said here, once, than remembered under pressure. */
+  function skipAdvice(k) {
+    var dow = dowOf(k);
+    if (dow === 1 || dow === 4) {
+      return "Monday and Thursday are the two the plan says never to drop. If the week is tight, "
+           + "merge Friday into Tuesday instead. Do not add this volume elsewhere to compensate.";
+    }
+    if (dow === 5) return "Short on time is what Friday is for — merge it into Tuesday rather than adding the volume elsewhere.";
+    if (dow === 3) return "If the legs were sore, the plan's preference is to keep Wednesday and drop the squat to RPE 7 rather than skip it.";
+    return "Logged as missed. Do not add extra volume elsewhere to compensate for a skipped session.";
+  }
+
   function prescribedSets(day) {
     return day.ex.reduce(function (n, e) { return n + (e.nonset ? 0 : e.sets); }, 0);
+  }
+
+  /* Monday to Sunday at a glance: what was done, what was missed, what is still
+     ahead. A rest day is never "missed" — there is nothing there to miss. */
+  function renderWeek() {
+    var t = todayKey(), mon = mondayOf(t);
+    var cells = [];
+    for (var i = 0; i < 7; i++) {
+      var k = shift(mon, i);
+      var day = sessionOf(k), st = (state.sessions[k] || {}).status || "";
+      var cls = [], mark;
+      if (day.rest) { cls.push("rest"); mark = "&middot;"; }
+      else if (st === "done") { cls.push("done"); mark = "&#10003;"; }
+      else if (st === "skipped") { cls.push("skipped"); mark = "&#10007;"; }
+      else if (k < t) { mark = "&ndash;"; }
+      else { mark = "&middot;"; }
+      if (k === t) cls.push("today");
+      cells.push('<div class="wd ' + cls.join(" ") + '" title="' + esc(prettyFull(k)) + '">' +
+        '<div class="l">' + DOW3[dowOf(k)].charAt(0) + "</div><div class=\"m\">" + mark + "</div></div>");
+    }
+    $("week").innerHTML = cells.join("");
   }
 
   /* ---------------- today's food ---------------- */
@@ -1672,7 +1752,7 @@ textarea#blob{
     var from = PLAN.start > t ? t : PLAN.start;
     var n = Math.max(1, daysBetween(from, t) + 1);
     var weighed = 0, vac = 0, cre = 0, stepsHit = 0, stepsDays = 0;
-    var gymDue = 0, gymDone = 0;
+    var gymDue = 0, gymDone = 0, gymSkipped = 0;
     for (var i = 0; i < n; i++) {
       var k = shift(from, i);
       if (k > t) break;
@@ -1684,15 +1764,20 @@ textarea#blob{
         if (d.steps) { stepsDays++; if (d.steps >= stepTarget(k)) stepsHit++; }
       }
       var day = sessionOf(k);
-      if (day.gym) {
+      if (!day.rest) {
         gymDue++;
         var s = state.sessions[k];
         if (s) {
-          var done = 0;
-          Object.keys(s.sets).forEach(function (id) {
-            (s.sets[id] || []).forEach(function (x) { if (x && x.done) done++; });
-          });
-          if (done >= 3) gymDone++;
+          if (s.status === "done") gymDone++;
+          else if (s.status === "skipped") gymSkipped++;
+          else {
+            /* Not marked either way: three logged sets is evidence enough. */
+            var done = 0;
+            Object.keys(s.sets).forEach(function (id) {
+              (s.sets[id] || []).forEach(function (x) { if (x && x.done) done++; });
+            });
+            if (done >= 3) gymDone++;
+          }
         }
       }
     }
@@ -1704,7 +1789,7 @@ textarea#blob{
     }
     $("adherence").innerHTML =
       row("Mornings weighed", weighed, n) +
-      row("Gym sessions started", gymDone, gymDue, "three logged sets counts as started") +
+      row("Sessions done", gymDone, gymDue, gymSkipped ? gymSkipped + " marked skipped" : "unmarked days count if three sets were logged") +
       row("Ab vacuums", vac, n) +
       row("Creatine", cre, n) +
       row("Step target met", stepsHit, stepsDays || n, stepsDays ? "" : "no step counts logged") +
@@ -1830,6 +1915,8 @@ textarea#blob{
       var d = getDay(k), s = state.sessions[k];
       var chips = [];
       if (s) {
+        if (s.status === "done") chips.push('<span class="chip ok">done</span>');
+        else if (s.status === "skipped") chips.push('<span class="chip miss">skipped</span>');
         var done = 0;
         Object.keys(s.sets).forEach(function (id) { (s.sets[id] || []).forEach(function (x) { if (x && x.done) done++; }); });
         if (done) chips.push('<span class="chip ok">' + done + " sets</span>");
@@ -1865,6 +1952,12 @@ textarea#blob{
     if (note) note.textContent = gym && total ? done + " / " + total + " sets" : "";
     var pk = $("pickleChk");
     if (pk) pk.setAttribute("aria-pressed", log.pickle ? "true" : "false");
+    document.querySelectorAll("#session [data-mark]").forEach(function (b) {
+      b.setAttribute("aria-pressed", log.status === b.getAttribute("data-mark") ? "true" : "false");
+    });
+    var sn = $("skipNote");
+    if (sn) sn.hidden = log.status !== "skipped";
+    renderWeek();
   }
   function patchDaily() {
     var k = todayKey(), d = getDay(k), target = stepTarget(k);
@@ -1880,7 +1973,7 @@ textarea#blob{
     if (view === "today") { renderWeigh(); renderVerdict(); renderSession(); renderFood(); renderDaily(); }
     if (view === "numbers") { renderFour(); renderVerdict(); renderWtChart(); renderTapeChart(); renderLifts(); renderAdherence(); }
     if (view === "plan") renderPlan();
-    if (view === "log") renderLog();
+    if (view === "log") { renderLog(); fillEdit(); }
   }
 
   /* ============================ events ============================ */
@@ -1946,6 +2039,14 @@ textarea#blob{
       }, patchSession);
       return;
     }
+    var m = ev.target.closest("[data-mark]");
+    if (m) {
+      var want = m.getAttribute("data-mark");
+      putSession(todayKey(), function (s) { s.status = s.status === want ? "" : want; }, patchSession);
+      var now = getSession(todayKey()).status;
+      tip(now === "done" ? "Session marked done." : now === "skipped" ? "Session marked skipped." : "Mark cleared.");
+      return;
+    }
     var p = ev.target.closest("#pickleChk");
     if (p) putSession(todayKey(), function (s) { s.pickle = !s.pickle; }, patchSession);
   });
@@ -1997,7 +2098,27 @@ textarea#blob{
     $("eWt").value = d.wt === null ? "" : d.wt;
     $("eWaist").value = d.waist === null ? "" : d.waist;
     $("eSh").value = d.sh === null ? "" : d.sh;
+    var rest = sessionOf(k).rest, st = getSession(k).status;
+    document.querySelectorAll("#eMark [data-emark]").forEach(function (b) {
+      b.setAttribute("aria-pressed", !rest && st === b.getAttribute("data-emark") ? "true" : "false");
+      b.disabled = rest;
+      b.style.opacity = rest ? ".45" : "";
+    });
+    $("eMarkNote").textContent = rest
+      ? prettyFull(k) + " is a full rest day — there is no session to mark either way."
+      : "Backfilling a missed morning is the point of this box. Leaving a measurement empty clears it for that day; "
+        + "the two session buttons save as soon as you tap them.";
   }
+  $("eMark").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-emark]");
+    if (!b || b.disabled) return;
+    var k = $("eDate").value;
+    if (!k) { tip("Pick a date first."); return; }
+    var want = b.getAttribute("data-emark");
+    putSession(k, function (s) { s.status = s.status === want ? "" : want; });
+    var now = getSession(k).status;
+    tip(prettyFull(k) + (now === "done" ? " marked done." : now === "skipped" ? " marked skipped." : " mark cleared."));
+  });
   $("eSave").addEventListener("click", function () {
     var k = $("eDate").value;
     if (!k) { tip("Pick a date first."); return; }

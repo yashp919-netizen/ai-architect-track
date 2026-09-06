@@ -256,6 +256,19 @@ body{
 .bar:hover,.bar:focus-visible{filter:brightness(1.14)}
 .daylab{text-align:center;font-size:.7rem;color:var(--muted);white-space:nowrap;border-left:1px solid var(--line-2);border-right:1px solid var(--line-2)}
 .daylab.is-today{color:var(--ink);font-weight:700}
+.rows.cats{grid-template-columns:1fr 80px 1fr}
+.catlab{text-align:center;font-size:.72rem;color:var(--ink-2);font-weight:600;white-space:nowrap;
+  border-left:1px solid var(--line-2);border-right:1px solid var(--line-2);overflow:hidden;text-overflow:ellipsis}
+.catlab.none{color:var(--muted);font-weight:500;font-style:italic}
+.bar.none{background:var(--line-2)}
+.tag-cat{font-size:.68rem;font-weight:600;color:var(--muted);border:1px solid var(--line-2);
+  border-radius:5px;padding:1px 6px;flex:none;white-space:nowrap}
+.tagger{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding-top:2px}
+.tagger .lab{font-size:.68rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);flex-basis:100%}
+.tagbtn{font:inherit;font-size:.76rem;font-weight:600;cursor:pointer;padding:5px 8px;border-radius:6px;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2)}
+.tagbtn:hover{border-color:var(--c);color:var(--c)}
+.tagbtn.skip{border-color:transparent;color:var(--muted)}
 .chart-foot{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:.76rem;color:var(--muted)}
 #tip{position:fixed;z-index:40;pointer-events:none;opacity:0;transform:translate(-50%,-118%);background:var(--ink);color:var(--ground);font-size:.76rem;font-weight:500;padding:6px 9px;border-radius:7px;white-space:nowrap;box-shadow:0 8px 22px -10px rgba(0,0,0,.7);transition:opacity .1s}
 #tip[data-show="true"]{opacity:1}
@@ -334,6 +347,9 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   .legend-item{font-size:.8rem}
   .panel{padding:14px 12px}
   .rows{grid-template-columns:1fr 50px 1fr}
+  .rows.cats{grid-template-columns:1fr 68px 1fr}
+  .catlab{font-size:.66rem}
+  .tagbtn{font-size:.72rem;padding:5px 7px}
   .daylab{font-size:.63rem}
 
   /* iOS zooms the whole page when a focused field is under 16px */
@@ -395,6 +411,11 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     <div class="panel balance" id="balance"></div>
   </section>
 
+  <section class="section" id="secWhere" hidden>
+    <p class="eyebrow">Where the time goes</p>
+    <div class="panel chart" id="where"></div>
+  </section>
+
   <section class="section" id="secChart" hidden>
     <p class="eyebrow">Day by day</p>
     <div class="panel chart" id="chart"></div>
@@ -414,7 +435,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         <div class="field"><label for="aDate">Date</label><input id="aDate" type="date" required></div>
         <div class="field"><label for="aTime">Started</label><input id="aTime" type="time" required></div>
         <div class="field"><label for="aMins">Minutes</label><input id="aMins" type="number" min="1" max="1440" step="1" value="30" required></div>
-        <div class="field grow"><label for="aNote">Note (optional)</label><input id="aNote" maxlength="60" placeholder="walk, gym, nap&hellip;" autocomplete="off"></div>
+        <div class="field"><label for="aCat">Activity</label><select id="aCat"></select></div>
+        <div class="field grow"><label for="aNote">Note (optional)</label><input id="aNote" maxlength="60" placeholder="anything worth remembering" autocomplete="off"></div>
         <button class="btn" type="submit">Add break</button>
       </form>
     </div>
@@ -467,6 +489,19 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
            isFinite(e.start) && typeof e.secs === "number" && e.secs > 0;
   }
   function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  /* What a break was actually spent on. Kept short and few: a long list turns
+     tagging into a chore and nobody does it. */
+  var CATS = [
+    { k: "walk", label: "Walk" }, { k: "gym", label: "Gym" },
+    { k: "read", label: "Read" }, { k: "nap", label: "Nap" },
+    { k: "social", label: "Social" }, { k: "screen", label: "Screen" },
+    { k: "food", label: "Food" }, { k: "other", label: "Other" }
+  ];
+  function catLabel(k) {
+    for (var i = 0; i < CATS.length; i++) if (CATS[i].k === k) return CATS[i].label;
+    return null;
+  }
 
   /* ---------------- local backend ---------------- */
   function loadLocal() {
@@ -573,14 +608,27 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         if (months[k].length !== before) touched[k] = 1;
       });
       var nk = monthKey(next.p, next.start);
-      months[nk] = (months[nk] || []).concat([{ id: id, p: next.p, start: next.start, secs: next.secs, note: next.note }]);
+      months[nk] = (months[nk] || []).concat([{ id: id, p: next.p, start: next.start, secs: next.secs, note: next.note, cat: next.cat }]);
       touched[nk] = 1;
       rebuild(); renderAll(); Object.keys(touched).forEach(writeMonth);
     } else {
       state.entries.forEach(function (e) {
         if (e.id !== id) return;
-        e.p = next.p; e.start = next.start; e.secs = next.secs; e.note = next.note;
+        e.p = next.p; e.start = next.start; e.secs = next.secs; e.note = next.note; e.cat = next.cat;
       });
+      saveLocal(); renderAll();
+    }
+  }
+  function tagEntry(id, cat) {
+    if (mode === "cloud") {
+      var touched = null;
+      Object.keys(months).forEach(function (k) {
+        months[k].forEach(function (e) { if (e.id === id) { e.cat = cat; touched = k; } });
+      });
+      rebuild(); renderAll();
+      if (touched) writeMonth(touched);
+    } else {
+      state.entries.forEach(function (e) { if (e.id === id) e.cat = cat; });
       saveLocal(); renderAll();
     }
   }
@@ -748,6 +796,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       '<circle class="dial-arc" cx="60" cy="60" r="' + R + '" stroke-dasharray="' + CIRC.toFixed(1) +
         '" stroke-dashoffset="' + (CIRC * (1 - Math.min(1, frac))).toFixed(1) + '"/></svg>';
   }
+  var tagging = null;
   function renderTimers() {
     var todayStart = startOfDay(Date.now()), weekStart = startOfWeek(Date.now());
     document.getElementById("timers").innerHTML = ["a", "b"].map(function (p) {
@@ -764,6 +813,13 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       s += running
         ? '<button class="btn btn-stop" type="button" data-stop="' + p + '">Stop &amp; log it</button>'
         : '<button class="btn btn-go" type="button" data-start="' + p + '">Start a break</button>';
+      if (tagging && tagging.p === p) {
+        s += '<div class="tagger"><span class="lab">What was that?</span>' +
+          CATS.map(function (c) {
+            return '<button class="tagbtn" type="button" data-tag="' + c.k + '">' + c.label + "</button>";
+          }).join("") +
+          '<button class="tagbtn skip" type="button" data-tag="">Skip</button></div>';
+      }
       s += '<div class="card-foot"><span>Today <b data-today="' + p + '">' + dur(today) + "</b></span>" +
            '<span>This week <b data-week="' + p + '">' + dur(week) + "</b></span></div>";
       return s + "</div>";
@@ -932,6 +988,57 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       '" aria-label="' + esc(nameOf(p) + ", " + dur(v) + " on " + d) + '"></button>';
   }
 
+  /* ---- where the time goes: one row per activity, the two of you either side
+     of the same centre line, on one shared scale so bar length always means
+     the same number of minutes. ---- */
+  function renderWhere() {
+    var el = document.getElementById("where");
+    if (!ready) { el.innerHTML = '<p class="loading">Loading…</p>'; return; }
+    var from = periodStart(), label = PERIOD_LABEL[period];
+
+    var tally = {}, max = 0, anyUntagged = false;
+    state.entries.forEach(function (e) {
+      if (from && e.start < from) return;
+      var k = catLabel(e.cat) ? e.cat : "";
+      if (!k) anyUntagged = true;
+      if (!tally[k]) tally[k] = { a: 0, b: 0 };
+      tally[k][e.p] += e.secs;
+    });
+    /* Real activities rank by size; untagged is a remainder, so it sits last
+       however big it is. */
+    var keys = Object.keys(tally).sort(function (x, y) {
+      if (!x !== !y) return x ? -1 : 1;
+      return (tally[y].a + tally[y].b) - (tally[x].a + tally[x].b);
+    });
+    keys.forEach(function (k) { max = Math.max(max, tally[k].a, tally[k].b); });
+
+    if (!keys.length) {
+      el.innerHTML = '<p class="empty">No breaks ' + esc(label) + " yet. Once there are a few, this shows what each of you spent that time on.</p>";
+      return;
+    }
+    if (max === 0) { el.innerHTML = '<p class="empty">Nothing to measure ' + esc(label) + ".</p>"; return; }
+
+    var html = '<div class="chart-head"><span class="legend-item"><span class="dot p1"></span>' + esc(nameOf("a")) +
+      '</span><span class="legend-item">' + esc(nameOf("b")) + '<span class="dot p2"></span></span></div><div class="rows cats">';
+    keys.forEach(function (k) {
+      var name = catLabel(k) || "untagged";
+      html += '<div class="track left">' + catBar(tally[k].a, max, "a", k, name) + "</div>" +
+        '<div class="catlab' + (k ? "" : " none") + '">' + esc(name) + "</div>" +
+        '<div class="track right">' + catBar(tally[k].b, max, "b", k, name) + "</div>";
+    });
+    html += "</div>";
+    html += '<p class="chart-foot">Break time ' + esc(label) + ", by activity. Full width either side = " + dur(max) +
+      ", so a longer bar always means more minutes whichever side it is on." +
+      (anyUntagged ? " Untagged breaks are the ones nobody said what they were — tag them from the log." : "") + "</p>";
+    el.innerHTML = html;
+  }
+  function catBar(v, max, p, k, name) {
+    if (v <= 0) return "";
+    return '<button class="bar ' + (k ? (p === "a" ? "p1" : "p2") : "none") + '" type="button" style="width:' +
+      Math.max(2.5, (v / max) * 100).toFixed(2) + '%" data-tip="' + esc(nameOf(p) + " · " + name + " · " + dur(v)) +
+      '" aria-label="' + esc(nameOf(p) + ", " + dur(v) + " on " + name) + '"></button>';
+  }
+
   /* ---- log ---- */
   var editing = null;
   function renderLog() {
@@ -958,9 +1065,15 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     return '<div class="entry"><span class="when">' + esc(timeOfDay(e.start)) + "&ndash;" +
       esc(timeOfDay(e.start + e.secs * 1000)) + '</span><span class="who-tag ' + (e.p === "a" ? "p1" : "p2") +
       '"><span class="dot"></span><span>' + esc(nameOf(e.p)) + '</span></span><span class="dur">' + dur(e.secs) +
-      '</span><span class="note">' + esc(e.note || "") + '</span><span class="acts">' +
+      "</span>" + (catLabel(e.cat) ? '<span class="tag-cat">' + esc(catLabel(e.cat)) + "</span>" : "") +
+      '<span class="note">' + esc(e.note || "") + '</span><span class="acts">' +
       '<button class="btn btn-sm btn-quiet" type="button" data-edit="' + esc(e.id) + '">Edit</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-del="' + esc(e.id) + '">Delete</button></span></div>';
+  }
+  function catOptions(sel) {
+    return '<option value="">Untagged</option>' + CATS.map(function (c) {
+      return '<option value="' + c.k + '"' + (c.k === sel ? " selected" : "") + ">" + c.label + "</option>";
+    }).join("");
   }
   function editRow(e) {
     var d = new Date(e.start);
@@ -973,6 +1086,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         pad(d.getHours()) + ":" + pad(d.getMinutes()) + '"></div>' +
       '<div class="field"><label for="eMins">Minutes</label><input id="eMins" type="number" min="1" max="1440" value="' +
         Math.max(1, Math.round(e.secs / 60)) + '"></div>' +
+      '<div class="field"><label for="eCat">Activity</label><select id="eCat">' + catOptions(e.cat) + "</select></div>" +
       '<div class="field grow"><label for="eNote">Note</label><input id="eNote" maxlength="60" value="' + esc(e.note || "") + '"></div>' +
       '<button class="btn btn-sm" type="button" data-save="' + esc(e.id) + '">Save</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-cancel="1">Cancel</button></div>';
@@ -983,6 +1097,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   function renderAll() {
     renderHead(); renderSync(); renderNames(); renderTabs();
     renderTimers(); renderTimeline(); renderBalance();
+    document.getElementById("secWhere").hidden = !(ready && state.entries.length > 0);
+    if (!document.getElementById("secWhere").hidden) renderWhere();
     document.getElementById("secChart").hidden = !(ready && distinctDays() >= 2);
     document.getElementById("secLog").hidden = !(ready && state.entries.length > 0);
     if (!document.getElementById("secChart").hidden) renderChart();
@@ -997,20 +1113,35 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   /* ============================ actions ============================ */
   document.getElementById("timers").addEventListener("click", function (ev) {
     var s = ev.target.closest("[data-start]"), t = ev.target.closest("[data-stop]");
-    if (s) { var p = s.getAttribute("data-start"); if (!state.running[p]) setRunning(p, Date.now()); }
+    if (s) { var p = s.getAttribute("data-start"); if (!state.running[p]) { tagging = null; setRunning(p, Date.now()); } }
+    var tag = ev.target.closest("[data-tag]");
+    if (tag) {
+      var k = tag.getAttribute("data-tag"), which = tagging;
+      tagging = null;
+      if (which && k) tagEntry(which.id, k); else renderAll();
+      return;
+    }
     if (t) {
       var q = t.getAttribute("data-stop"), began = state.running[q];
       if (!began) return;
       var secs = Math.round((Date.now() - began) / 1000);
-      setRunning(q, null);
-      if (secs >= 5) addEntry({ id: newId(), p: q, start: began, secs: secs, note: "" });
+      /* Ask what it was on the way back, never on the way out — nobody wants a
+         menu between them and the door. */
+      if (secs >= 5) {
+        var id = newId();
+        tagging = { id: id, p: q };
+        setRunning(q, null);
+        addEntry({ id: id, p: q, start: began, secs: secs, note: "" });
+      } else {
+        setRunning(q, null);
+      }
     }
   });
   document.getElementById("tabs").addEventListener("click", function (ev) {
     var b = ev.target.closest("[data-period]");
     if (!b) return;
     period = b.getAttribute("data-period");
-    renderTabs(); renderBalance();
+    renderTabs(); renderBalance(); renderWhere();
   });
   document.getElementById("names").addEventListener("change", onName);
   document.getElementById("names").addEventListener("blur", onName, true);
@@ -1041,7 +1172,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var d = date.split("-"), hm = time.split(":");
     addEntry({ id: newId(), p: addWho,
       start: new Date(+d[0], +d[1] - 1, +d[2], +hm[0], +hm[1], 0, 0).getTime(),
-      secs: mins * 60, note: document.getElementById("aNote").value.trim().slice(0, 60) });
+      secs: mins * 60, cat: document.getElementById("aCat").value || undefined,
+      note: document.getElementById("aNote").value.trim().slice(0, 60) });
     document.getElementById("aNote").value = "";
   });
 
@@ -1060,7 +1192,8 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
         var pp = dv.split("-"), hh = tv.split(":");
         saveEntry(eid, { p: document.getElementById("eWho").value === "b" ? "b" : "a",
           start: new Date(+pp[0], +pp[1] - 1, +pp[2], +hh[0], +hh[1], 0, 0).getTime(),
-          secs: mv * 60, note: document.getElementById("eNote").value.trim().slice(0, 60) });
+          secs: mv * 60, cat: document.getElementById("eCat").value || undefined,
+          note: document.getElementById("eNote").value.trim().slice(0, 60) });
       } else renderLog();
     }
   });
@@ -1171,7 +1304,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       ? "Replace the shared ledger for both of you with this backup?"
       : "Replace everything in this app with this backup?")) return;
     var entries = parsed.entries.filter(valid).map(function (e) {
-      return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "" };
+      return { id: e.id || newId(), p: e.p, start: e.start, secs: e.secs, note: e.note || "", cat: e.cat };
     });
     replaceAll({
       names: (parsed.names && parsed.names.a && parsed.names.b)
@@ -1197,6 +1330,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     var now = new Date();
     document.getElementById("aDate").value = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
     document.getElementById("aTime").value = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    document.getElementById("aCat").innerHTML = catOptions("");
     syncWho();
   })();
 

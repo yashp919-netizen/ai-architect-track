@@ -5,6 +5,10 @@
       "destination": "/breaks/index.html"
     },
     {
+      "source": "/shred",
+      "destination": "/shred/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }

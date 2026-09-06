@@ -20,6 +20,37 @@ Regenerate the icons from `icon.svg` at 180, 192 and 512 px if the mark changes.
 
 ---
 
+# The Shred
+
+The 2 Sep – 28 Dec 2026 training and nutrition plan as a working app, installable
+on a phone. Lives in `public/shred/`, and is built the same way as Break Ledger:
+`index.html` is the whole app with no build step and no dependencies, `sw.js`
+caches the shell for offline use scoped to `/shred/`, and `version.json` backs the
+update button.
+
+- **On the phone:** open `/shred/` in Safari, then Share -> Add to Home Screen.
+  It works in a gym with no signal.
+- **What it does, rather than just shows:** it knows which day of the plan today
+  is, so it opens on the right session with the right set count, the right macro
+  block and the right step target — and it applies the travel window, the two
+  deload weeks, the Saturday refeeds and the December step increase on its own.
+- **The seven-day average** is the point. Every decision the plan asks for is made
+  on the week-on-week change in that average, never on one weigh-in, so the app
+  computes it and reads back the plan's own adjustment rule for the phase you are
+  in. It refuses to give a verdict on fewer than four readings in either week.
+- **Set logging** carries loads forward: once every set of a lift reaches the top
+  of its rep range, the next session says to add weight and reset to the bottom.
+- **Storage:** everything lives in that browser's local storage. Use the Backup &
+  restore panel before clearing browser data or moving to a new phone. Served
+  inside the claude.ai artifact runtime it switches to the shared store instead,
+  so a phone and a laptop see one log.
+
+The plan's own numbers live in one `PLAN`/`DAYS`/`FOOD` block at the top of the
+script — set counts are checked against the exercise lists at boot, so a
+transcription slip shows up in the console rather than in a week of training.
+
+---
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

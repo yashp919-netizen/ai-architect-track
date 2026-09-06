@@ -1,7 +1,7 @@
 /* Break Ledger offline shell.
    Scoped to this folder by where it is served from, so nothing else on the
    domain is intercepted. Bump CACHE to force a refresh of the cached shell. */
-var CACHE = "break-ledger-v3";
+var CACHE = "break-ledger-v4";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
 self.addEventListener("install", function (ev) {

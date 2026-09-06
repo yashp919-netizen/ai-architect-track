@@ -296,6 +296,27 @@ body{
 #tip[data-show="true"]{opacity:1}
 
 /* ---------- forms & log ---------- */
+.say-row{display:flex;gap:8px;align-items:stretch}
+.say-in{flex:1 1 auto;min-width:0;font:inherit;font-size:.95rem;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line-2);border-radius:9px;padding:10px 12px}
+.mic{flex:none;width:46px;display:flex;align-items:center;justify-content:center;padding:0;
+  border:1px solid var(--line-2);border-radius:9px;background:var(--surface);color:var(--ink-2);cursor:pointer}
+.mic:hover{border-color:var(--ink-2);color:var(--ink)}
+.mic svg{width:19px;height:19px;display:block}
+.mic[data-on="true"]{background:var(--p1);border-color:var(--p1);color:var(--on1);animation:pulse 1.4s ease-in-out infinite}
+.parsed{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.pchip{font-size:.78rem;font-weight:600;padding:4px 9px;border-radius:999px;
+  border:1px solid var(--line-2);color:var(--ink-2);background:var(--surface)}
+.pchip.who{border-color:var(--c);color:var(--c)}
+.pchip.miss{border-style:dashed;color:var(--muted);font-weight:500}
+.pgap{flex-basis:100%;height:0}
+.saynote{margin:8px 0 0;font-size:.79rem;color:var(--muted)}
+.saynote b{color:var(--ink-2);font-weight:600}
+.saynote select{font:inherit;font-size:.79rem;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line-2);border-radius:6px;padding:1px 4px}
+.orline{display:flex;align-items:center;gap:10px;margin:16px 0 4px;font-size:.68rem;font-weight:600;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.orline::before,.orline::after{content:"";flex:1;height:1px;background:var(--line)}
 .form{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -478,6 +499,20 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
   <section class="section">
     <p class="eyebrow">Log a break you forgot to time</p>
     <div class="panel">
+      <div class="say-row">
+        <button class="mic" id="micBtn" type="button" hidden aria-label="Speak a break">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <rect x="9" y="2" width="6" height="11" rx="3"></rect>
+            <path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v4"></path>
+          </svg>
+        </button>
+        <input class="say-in" id="sayIn" placeholder="Kratika 40 minute walk out at 5pm" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-label="Describe a break in plain words">
+        <button class="btn" id="sayAdd" type="button">Add</button>
+      </div>
+      <div class="parsed" id="parsed" hidden></div>
+      <p class="saynote" id="sayNote"></p>
+      <div class="orline">or fill it in</div>
       <form class="form" id="addForm">
         <div class="field">
           <label>Who</label>
@@ -538,7 +573,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
        local — this browser only, for the page opened as a file or hosted
      Everything below the adapter is written once and works on either.
      ============================================================ */
-  var BUILD = "v6 \u00b7 6 Sep 2026";
+  var BUILD = "v7 \u00b7 6 Sep 2026";
   var KEY = "breakLedger.v2";
   var DEFAULT_NAMES = { a: "Yash", b: "Kratika" };
   var mode = "local", db = null, months = {}, ready = true, syncErr = "";
@@ -1206,6 +1241,80 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
       '" aria-label="' + esc(nameOf(p) + ", " + dur(v) + " on " + name) + '"></button>';
   }
 
+  /* ============================================================
+     Plain-words parsing. Everything runs on the phone: no service is
+     called, nothing is sent anywhere, and it works with no signal.
+     "Kratika 40 minute walk out at 5pm" -> a complete entry.
+     ============================================================ */
+  var SYN = [
+    ["ashvi",    /\b(ashvi|baby|kid|child|childcare|nappy|feed(ing)?)\b/],
+    ["together", /\b(together|both of us|with each other|date)\b/],
+    ["gym",      /\b(gym|workout|work out|exercise|run|running|jog|cycle|cycling|yoga|swim)\b/],
+    ["walk",     /\b(walk|walking|walked|stroll|outside for a bit)\b/],
+    ["read",     /\b(read|reading|book|study|studying)\b/],
+    ["nap",      /\b(nap|napped|sleep|slept|snooze|lie down|lay down|rest(ed)?)\b/],
+    ["social",   /\b(call|called|calling|chat|chatting|friend|friends|social|talk(ed|ing)?|catch up)\b/],
+    ["screen",   /\b(tv|telly|netflix|scroll(ing|ed)?|youtube|instagram|screen|phone|reels|game|gaming)\b/],
+    ["food",     /\b(food|coffee|tea|chai|lunch|dinner|breakfast|snack|eat|eating|ate|cook(ing|ed)?)\b/]
+  ];
+
+  function parseSpoken(raw) {
+    var t = " " + String(raw || "").toLowerCase().replace(/[,.!?]/g, " ").replace(/\s+/g, " ") + " ";
+    var out = { who: null, secs: null, cat: null, where: null, start: null, said: String(raw || "").trim() };
+
+    /* who — their own names first, then the obvious stand-ins */
+    ["a", "b"].forEach(function (p) {
+      var n = nameOf(p).toLowerCase().replace(/[^a-z0-9]+/g, "");
+      if (n && new RegExp("\\b" + n + "\\b").test(t.replace(/[^a-z0-9 ]+/g, ""))) out.who = p;
+    });
+    if (!out.who && /\b(i|me|my|myself)\b/.test(t)) out.who = meIs();
+    if (!out.who && /\b(she|her|wife)\b/.test(t)) out.who = "b";
+    if (!out.who && /\b(he|him|husband)\b/.test(t)) out.who = "a";
+
+    /* how long */
+    var hm = /\b(\d{1,2})\s*(?:h|hr|hrs|hour|hours)\b(?:\s*(?:and\s*)?(\d{1,2})\s*(?:m|min|mins|minute|minutes)?)?/.exec(t);
+    var mm = /\b(\d{1,3})\s*(?:m|min|mins|minute|minutes)\b/.exec(t);
+    if (hm) out.secs = ((+hm[1]) * 60 + (hm[2] ? +hm[2] : 0)) * 60;
+    else if (mm) out.secs = (+mm[1]) * 60;
+    else if (/\bhalf an hour\b|\bhalf hour\b/.test(t)) out.secs = 30 * 60;
+    else if (/\b(an|one|1) hour\b/.test(t)) out.secs = 60 * 60;
+    else if (/\bquarter of an hour\b/.test(t)) out.secs = 15 * 60;
+    else {
+      /* a bare number with nothing else is read as minutes */
+      var bare = /\b(\d{1,3})\b/.exec(t.replace(/\b\d{1,2}\s*(?::|am|pm)/g, " "));
+      if (bare) out.secs = (+bare[1]) * 60;
+    }
+
+    /* out or in */
+    if (/\b(out|outside|away|went out|off out)\b/.test(t)) out.where = "out";
+    else if (/\b(in|indoors|inside|at home|home)\b/.test(t)) out.where = "in";
+
+    /* what */
+    for (var i = 0; i < SYN.length; i++) if (SYN[i][1].test(t)) { out.cat = SYN[i][0]; break; }
+
+    /* when — a clock time wins, then a rough part of day, else it just ended */
+    var day = new Date(); day.setHours(0, 0, 0, 0);
+    if (/\byesterday\b/.test(t)) day.setDate(day.getDate() - 1);
+    var at = /\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t) ||
+             /\b(\d{1,2}):(\d{2})\s*(am|pm)?/.exec(t) ||
+             /\b(\d{1,2})\s*(am|pm)\b/.exec(t);
+    if (at) {
+      var h = +at[1], mi = at[2] && at[2].length === 2 ? +at[2] : 0;
+      var ap = at[3] || (at[2] && /^(am|pm)$/.test(at[2]) ? at[2] : null);
+      if (ap === "pm" && h < 12) h += 12;
+      if (ap === "am" && h === 12) h = 0;
+      if (!ap && h <= 7) h += 12;              /* "at 5" on a break log means the evening */
+      day.setHours(Math.min(23, h), Math.min(59, mi), 0, 0);
+      out.start = day.getTime();
+    } else if (/\bmorning\b/.test(t)) { day.setHours(9, 0, 0, 0); out.start = day.getTime(); }
+    else if (/\bafternoon\b/.test(t)) { day.setHours(14, 0, 0, 0); out.start = day.getTime(); }
+    else if (/\bevening\b|\btonight\b/.test(t)) { day.setHours(19, 0, 0, 0); out.start = day.getTime(); }
+    else if (/\byesterday\b/.test(t)) { day.setHours(12, 0, 0, 0); out.start = day.getTime(); }
+    else if (out.secs) out.start = Date.now() - out.secs * 1000;   /* assume it just ended */
+
+    return out;
+  }
+
   /* ---- log ---- */
   var editing = null;
   function renderLog() {
@@ -1360,6 +1469,119 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     if (!v || v === nameOf(p)) { i.value = nameOf(p); return; }
     setPersonName(p, v);
   }
+
+  /* ---- speak / type a break: always previewed, never added silently, because
+     dictation mishears and a wrong entry is worse than no entry ---- */
+  var heard = null;
+  var ME = "breakLedger.me";
+  function meIs() {
+    try { var v = window.localStorage.getItem(ME); return v === "b" ? "b" : "a"; } catch (e) { return "a"; }
+  }
+  function setMe(v) { try { window.localStorage.setItem(ME, v); } catch (e) {} }
+  function renderParsed() {
+    var box = document.getElementById("parsed");
+    var note = document.getElementById("sayNote");
+    if (!heard) {
+      box.hidden = true; box.innerHTML = "";
+      note.innerHTML = 'Say or type it in plain words &mdash; <b>"' + esc(nameOf("b")) +
+        ' 40 minute walk out at 5pm"</b>. Names, minutes or hours, in or out, what it was, and a time if ' +
+        'it was not just now. Saying <b>&ldquo;I&rdquo;</b> means ' +
+        '<select id="meSel" aria-label="Who this phone belongs to">' +
+        '<option value="a"' + (meIs() === "a" ? " selected" : "") + ">" + esc(nameOf("a")) + "</option>" +
+        '<option value="b"' + (meIs() === "b" ? " selected" : "") + ">" + esc(nameOf("b")) + "</option>" +
+        "</select> on this phone.";
+      return;
+    }
+    box.hidden = false;
+    var bits = [];
+    bits.push(heard.who
+      ? '<span class="pchip who ' + (heard.who === "a" ? "p1" : "p2") + '">' + esc(nameOf(heard.who)) + "</span>"
+      : '<span class="pchip miss">who?</span>');
+    bits.push(heard.secs
+      ? '<span class="pchip">' + dur(heard.secs) + "</span>"
+      : '<span class="pchip miss">how long?</span>');
+    bits.push('<span class="pchip">' + esc(catLabel(heard.cat) || "untagged") + "</span>");
+    bits.push('<span class="pchip">' + (heard.where === "out" ? "out" : "in") + "</span>");
+    if (heard.start) bits.push('<span class="pchip">' + esc(dayLabel(heard.start).toLowerCase() + " " + timeOfDay(heard.start)) + "</span>");
+    box.innerHTML = bits.join("");
+
+    if (!heard.who) {
+      note.innerHTML = "Which of you was it? " +
+        '<button class="btn btn-sm" type="button" data-heardwho="a">' + esc(nameOf("a")) + "</button> " +
+        '<button class="btn btn-sm" type="button" data-heardwho="b">' + esc(nameOf("b")) + "</button>";
+    } else if (!heard.secs) {
+      note.textContent = "I could not tell how long. Add \u201c25 minutes\u201d or \u201chalf an hour\u201d and try again.";
+    } else {
+      note.innerHTML = 'Heard <b>&ldquo;' + esc(heard.said) + '&rdquo;</b>. Press Add if that is right, or edit the words.';
+    }
+  }
+  function commitHeard() {
+    if (!heard) { document.getElementById("sayNote").textContent = "Say or type something first."; return; }
+    if (!heard.who || !heard.secs) { renderParsed(); return; }
+    addEntry({ id: newId(), p: heard.who, start: heard.start || Date.now() - heard.secs * 1000,
+      secs: heard.secs, cat: heard.cat || undefined, where: heard.where || "in", note: "" });
+    heard = null;
+    document.getElementById("sayIn").value = "";
+    renderParsed();
+    document.getElementById("sayNote").textContent = "Added.";
+  }
+  document.getElementById("sayIn").addEventListener("input", function () {
+    var v = this.value.trim();
+    heard = v ? parseSpoken(v) : null;
+    renderParsed();
+  });
+  document.getElementById("sayIn").addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") { ev.preventDefault(); commitHeard(); }
+  });
+  document.getElementById("sayAdd").addEventListener("click", commitHeard);
+  document.getElementById("sayNote").addEventListener("change", function (ev) {
+    if (!ev.target.closest("#meSel")) return;
+    setMe(ev.target.value);
+    var box = document.getElementById("sayIn");
+    heard = box.value.trim() ? parseSpoken(box.value.trim()) : null;
+    renderParsed();
+  });
+  document.getElementById("sayNote").addEventListener("click", function (ev) {
+    var w = ev.target.closest("[data-heardwho]");
+    if (!w || !heard) return;
+    heard.who = w.getAttribute("data-heardwho");
+    renderParsed();
+  });
+
+  /* The browser's own speech recognition where it exists. Where it does not,
+     the box still takes dictation from the phone keyboard's microphone. */
+  (function speech() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var btn = document.getElementById("micBtn");
+    if (!SR || !btn) return;
+    btn.hidden = false;
+    var rec = null, on = false;
+    btn.addEventListener("click", function () {
+      if (on && rec) { try { rec.stop(); } catch (e) {} return; }
+      try { rec = new SR(); } catch (e) { btn.hidden = true; return; }
+      rec.lang = navigator.language || "en-GB";
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+      rec.onstart = function () { on = true; btn.setAttribute("data-on", "true"); };
+      rec.onend = function () { on = false; btn.removeAttribute("data-on"); };
+      rec.onerror = function (e) {
+        on = false; btn.removeAttribute("data-on");
+        document.getElementById("sayNote").textContent =
+          (e && e.error === "not-allowed")
+            ? "Microphone access was refused. Type it instead, or use the microphone on your keyboard."
+            : "Speech did not work here. Type it instead, or use the microphone on your keyboard.";
+      };
+      rec.onresult = function (ev) {
+        var txt = "";
+        for (var i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
+        var box = document.getElementById("sayIn");
+        box.value = txt.trim();
+        heard = box.value ? parseSpoken(box.value) : null;
+        renderParsed();
+      };
+      try { rec.start(); } catch (e) { /* already running */ }
+    });
+  })();
 
   var addWho = "a";
   document.getElementById("addWho").addEventListener("click", function (ev) {
@@ -1542,6 +1764,7 @@ footer.foot{margin-top:36px;font-size:.78rem;color:var(--muted);line-height:1.65
     document.getElementById("aTime").value = pad(now.getHours()) + ":" + pad(now.getMinutes());
     document.getElementById("aCat").innerHTML = catOptions("");
     syncWho();
+    renderParsed();
   })();
 
   function startLocal() { mode = "local"; ready = true; state = loadLocal(); renderAll(); }
